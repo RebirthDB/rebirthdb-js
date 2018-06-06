@@ -13,17 +13,10 @@ describe('accessing-reql', function () {
 
   beforeEach(async () => {
     connection = await r.connect(config)
-    assert(connection.open)
   })
 
   afterEach(async () => {
-    if (!connection.open) {
-      connection = await r.connect(config)
-      assert(connection.open)
-    }
-
-    await connection.close()
-    assert(!connection.open)
+    if (connection) await connection.close()
   })
 
   it('`run` should throw when called without connection', async () => {
@@ -227,7 +220,16 @@ describe('accessing-reql', function () {
       {name: 'Mino', grownUp: false}
     ]).group('grownUp').run(connection, {groupFormat: 'raw'})
 
-    assert.deepEqual(result, { '$reql_type$': 'GROUPED_DATA', 'data': [ [ false, [ { 'grownUp': false, 'name': 'Luke' }, { 'grownUp': false, 'name': 'Mino' } ] ], [ true, [ { 'grownUp': true, 'name': 'Michel' }, { 'grownUp': true, 'name': 'Laurent' }, { 'grownUp': true, 'name': 'Sophie' } ] ] ] })
+    assert.deepEqual(result, {
+      '$reql_type$': 'GROUPED_DATA',
+      'data': [[false, [{'grownUp': false, 'name': 'Luke'}, {
+        'grownUp': false,
+        'name': 'Mino'
+      }]], [true, [{'grownUp': true, 'name': 'Michel'}, {'grownUp': true, 'name': 'Laurent'}, {
+        'grownUp': true,
+        'name': 'Sophie'
+      }]]]
+    })
   })
 
   it('`profile` should work', async function () {
@@ -242,23 +244,22 @@ describe('accessing-reql', function () {
     assert.equal(result, true)
   })
 
-  it('`timeout` option should work', async function () {
-    let server, port
-    try {
-      port = Math.floor(Math.random() * (65535 - 1025) + 1025)
-
-      server = net.createServer().listen(port)
-
-      connection = await r.connect({
+  it('`timeout` option should work', function (done) {
+    const port = Math.floor(Math.random() * (65535 - 1025) + 1025)
+    const server = net.createServer((socket) => {
+      setTimeout(() => {
+        socket.destroy()
+        server.close()
+        done()
+      }, 1000)
+    }).listen(port, () => {
+      r.connect({
         port: port,
         timeout: 1
+      }).error((err) => {
+        assert.equal(err.message, 'Failed to connect to localhost:' + port + ' in less than 1s.')
       })
-      assert.fail('should throw')
-    } catch (err) {
-      await server.close()
-
-      assert.equal(err.message, 'Failed to connect to localhost:' + port + ' in less than 1s.')
-    }
+    })
   })
 
   it('`server` should work', async function () {

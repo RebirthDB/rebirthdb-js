@@ -2986,7 +2986,7 @@ Expected type NUMBER but found PTYPE<BINARY> in:
 r.binary(<Buffer>).add(1)
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 */
-  it('Test backtrace for r.binary(new Buffer([0,1,2,3,4])).add(1)', async () => {
+  it('Test backtrace for r.binary(Buffer.from([0,1,2,3,4])).add(1)', async () => {
     try {
       r.nextVarId = 1
       await r.binary(Buffer.from([0, 1, 2, 3, 4])).add(1).run()
