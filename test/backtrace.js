@@ -1,48 +1,53 @@
-const path = require('path')
-const config = require(path.join(__dirname, '/config.js'))
-const rethinkdbdash = require(path.join(__dirname, '/../lib'))
-const util = require(path.join(__dirname, '/util/common.js'))
-const assert = require('assert')
+const path = require( 'path' )
+const config = require( path.join( __dirname, '/config.js' ) )
+const rebirthdb = require( path.join( __dirname, '/../lib' ) )
+const util = require( path.join( __dirname, '/util/common.js' ) )
+const assert = require( 'assert' )
 const uuid = util.uuid
-const {before, after, describe, it} = require('mocha')
+const {
+    before,
+    after,
+    describe,
+    it
+} = require( 'mocha' )
 
-describe('backtraces', () => {
-  let r, dbName, tableName
+describe( 'backtraces', () => {
+    let r, dbName, tableName
 
-  before(async () => {
-    r = await rethinkdbdash(config)
-    dbName = uuid()
-    tableName = uuid()
+    before( async () => {
+        r = await rebirthdb( config )
+        dbName = uuid()
+        tableName = uuid()
 
-    let result = await r.dbCreate(dbName).run()
-    assert.equal(result.dbs_created, 1)
+        let result = await r.dbCreate( dbName ).run()
+        assert.equal( result.dbs_created, 1 )
 
-    result = await r.db(dbName).tableCreate(tableName).run()
-    assert.equal(result.tables_created, 1)
+        result = await r.db( dbName ).tableCreate( tableName ).run()
+        assert.equal( result.tables_created, 1 )
 
-    result = await r.db(dbName).table(tableName).insert(Array(100).fill({})).run()
-    assert.equal(result.inserted, 100)
-    assert.equal(result.generated_keys.length, 100)
-  })
+        result = await r.db( dbName ).table( tableName ).insert( Array( 100 ).fill( {} ) ).run()
+        assert.equal( result.inserted, 100 )
+        assert.equal( result.generated_keys.length, 100 )
+    } )
 
-  after(async () => {
-    await r.getPoolMaster().drain()
-  })
+    after( async () => {
+        await r.getPoolMaster().drain()
+    } )
 
-  /*
- *** NOTE ***
- *
- * Most of the backtraces are broken on the server.
- * By broken, I mean they are most of the time not precise, like when a table doesn't exists,
- * it underlines the database and the table. Or when you add a string to a number, it underlines
- * everything and not just the string.
- *
- * We still keep tests for all the terms to be sure that at least, we properly print them.
- *
- ************
- */
+    /*
+     *** NOTE ***
+     *
+     * Most of the backtraces are broken on the server.
+     * By broken, I mean they are most of the time not precise, like when a table doesn't exists,
+     * it underlines the database and the table. Or when you add a string to a number, it underlines
+     * everything and not just the string.
+     *
+     * We still keep tests for all the terms to be sure that at least, we properly print them.
+     *
+     ************
+     */
 
-  /*
+    /*
 Frames:
 [ { type: 'POS', pos: 0 } ]
 
@@ -51,17 +56,18 @@ Expected type STRING but found NUMBER in:
 r.dbDrop(1)
      ^
 */
-  it('Test backtrace for r.dbDrop(1)', async () => {
-    try {
-      r.nextVarId = 1
-      await r.dbDrop(1).run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Expected type STRING but found NUMBER in:\nr.dbDrop(1)\n         ^ \n')
-    }
-  })
+    it( 'Test backtrace for r.dbDrop(1)', async () => {
+        try {
+            r.nextVarId = 1
+            await r.dbDrop( 1 ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Expected type STRING but found NUMBER in:\nr.dbDrop(1)\n         ^ \n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 [ { type: 'POS', pos: 0 } ]
 
@@ -70,17 +76,18 @@ Expected type STRING but found NUMBER in:
 r.dbCreate(1)
        ^
 */
-  it('Test backtrace for r.dbCreate(1)', async () => {
-    try {
-      r.nextVarId = 1
-      await r.dbCreate(1).run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Expected type STRING but found NUMBER in:\nr.dbCreate(1)\n           ^ \n')
-    }
-  })
+    it( 'Test backtrace for r.dbCreate(1)', async () => {
+        try {
+            r.nextVarId = 1
+            await r.dbCreate( 1 ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Expected type STRING but found NUMBER in:\nr.dbCreate(1)\n           ^ \n' )
+        }
+    } )
 
-  /*
+    /*
 //TODO Broken on the server
 Frames:
 [ { type: 'POS', pos: 0 }, { type: 'POS', pos: 1 } ]
@@ -92,17 +99,20 @@ r.dbList().do(function(var_1) {
        ^^^^^^^^^^^^^^
 })
 */
-  it('Test backtrace for r.dbList().do(function(x) { return x.add("a") })', async () => {
-    try {
-      r.nextVarId = 1
-      await r.dbList().do(function (x) { return x.add('a') }).run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Expected type ARRAY but found STRING in:\nr.dbList().do(function(var_1) {\n    return var_1.add("a")\n           ^^^^^^^^^^^^^^\n})\n')
-    }
-  })
+    it( 'Test backtrace for r.dbList().do(function(x) { return x.add("a") })', async () => {
+        try {
+            r.nextVarId = 1
+            await r.dbList().do( function( x ) {
+                return x.add( 'a' )
+            } ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Expected type ARRAY but found STRING in:\nr.dbList().do(function(var_1) {\n    return var_1.add("a")\n           ^^^^^^^^^^^^^^\n})\n' )
+        }
+    } )
 
-  /*
+    /*
 //TODO Broken on the server
 Frames:
 [ { type: 'POS', pos: 0 }, { type: 'POS', pos: 1 } ]
@@ -114,17 +124,20 @@ r.expr(2).do(function(var_1) {
        ^^^^^^^^^^^^^^
 })
 */
-  it('Test backtrace for r.expr(2).do(function(x) { return x.add("a") })', async () => {
-    try {
-      r.nextVarId = 1
-      await r.expr(2).do(function (x) { return x.add('a') }).run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Expected type NUMBER but found STRING in:\nr.expr(2).do(function(var_1) {\n    return var_1.add("a")\n           ^^^^^^^^^^^^^^\n})\n')
-    }
-  })
+    it( 'Test backtrace for r.expr(2).do(function(x) { return x.add("a") })', async () => {
+        try {
+            r.nextVarId = 1
+            await r.expr( 2 ).do( function( x ) {
+                return x.add( 'a' )
+            } ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Expected type NUMBER but found STRING in:\nr.expr(2).do(function(var_1) {\n    return var_1.add("a")\n           ^^^^^^^^^^^^^^\n})\n' )
+        }
+    } )
 
-  /*
+    /*
 //TODO Broken on the server
 Frames:
 []
@@ -134,17 +147,18 @@ Table `551f695a834f94e0fe215e19441b01c9` already exists in:
 r.db("7debc6e4a249569a1a6280fd6e871270").tableCreate("551f695a834f94e0fe215e19441b01c9")
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 */
-  it('Test backtrace for r.db(dbName).tableCreate(tableName)', async () => {
-    try {
-      r.nextVarId = 1
-      await r.db(dbName).tableCreate(tableName).run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Table `' + dbName + '.' + tableName + '` already exists in:\nr.db("' + dbName + '").tableCreate("' + tableName + '")\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n')
-    }
-  })
+    it( 'Test backtrace for r.db(dbName).tableCreate(tableName)', async () => {
+        try {
+            r.nextVarId = 1
+            await r.db( dbName ).tableCreate( tableName ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Table `' + dbName + '.' + tableName + '` already exists in:\nr.db("' + dbName + '").tableCreate("' + tableName + '")\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n' )
+        }
+    } )
 
-  /*
+    /*
 //TODO Broken on the server
 Frames:
 []
@@ -154,17 +168,18 @@ Table `nonExistingTable` does not exist in:
 r.db("4ab068e0ed6b05f71dcd4b07034698c4").tableDrop("nonExistingTable")
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 */
-  it('Test backtrace for r.db(dbName).tableDrop("nonExistingTable")', async () => {
-    try {
-      r.nextVarId = 1
-      await r.db(dbName).tableDrop('nonExistingTable').run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Table `' + dbName + '.nonExistingTable` does not exist in:\nr.db("' + dbName + '").tableDrop("nonExistingTable")\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n')
-    }
-  })
+    it( 'Test backtrace for r.db(dbName).tableDrop("nonExistingTable")', async () => {
+        try {
+            r.nextVarId = 1
+            await r.db( dbName ).tableDrop( 'nonExistingTable' ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Table `' + dbName + '.nonExistingTable` does not exist in:\nr.db("' + dbName + '").tableDrop("nonExistingTable")\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n' )
+        }
+    } )
 
-  /*
+    /*
 //TODO Broken on the server
 Frames:
 [ { type: 'POS', pos: 0 }, { type: 'POS', pos: 1 } ]
@@ -176,17 +191,20 @@ r.db("9cdeba73602f74f7ad67f77c76a87528").tableList().do(function(var_1) {
        ^^^^^^^^^^^^^^
 })
 */
-  it('Test backtrace for r.db(dbName).tableList().do(function(x) { return x.add("a") })', async () => {
-    try {
-      r.nextVarId = 1
-      await r.db(dbName).tableList().do(function (x) { return x.add('a') }).run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Expected type ARRAY but found STRING in:\nr.db("' + dbName + '").tableList().do(function(var_1) {\n    return var_1.add("a")\n           ^^^^^^^^^^^^^^\n})\n')
-    }
-  })
+    it( 'Test backtrace for r.db(dbName).tableList().do(function(x) { return x.add("a") })', async () => {
+        try {
+            r.nextVarId = 1
+            await r.db( dbName ).tableList().do( function( x ) {
+                return x.add( 'a' )
+            } ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Expected type ARRAY but found STRING in:\nr.db("' + dbName + '").tableList().do(function(var_1) {\n    return var_1.add("a")\n           ^^^^^^^^^^^^^^\n})\n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 [ { type: 'POS', pos: 1 }, { type: 'POS', pos: 1 } ]
 
@@ -199,17 +217,20 @@ r.expr(["zoo", "zoo"]).forEach(function(var_1) {
     ^^^^^^^^^^^^^^^^^^^
 })
 */
-  it('Test backtrace for r.expr(["zoo", "zoo"]).forEach(function(index) { return r.db(dbName).table(tableName).indexCreate(index) })', async () => {
-    try {
-      r.nextVarId = 1
-      await r.expr(['zoo', 'zoo']).forEach(function (index) { return r.db(dbName).table(tableName).indexCreate(index) }).run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Index `zoo` already exists on table `' + dbName + '.' + tableName + '` in:\nr.expr(["zoo", "zoo"]).forEach(function(var_1) {\n    return r.db("' + dbName + '").table("' + tableName + '")\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n        .indexCreate(var_1)\n        ^^^^^^^^^^^^^^^^^^^\n})\n')
-    }
-  })
+    it( 'Test backtrace for r.expr(["zoo", "zoo"]).forEach(function(index) { return r.db(dbName).table(tableName).indexCreate(index) })', async () => {
+        try {
+            r.nextVarId = 1
+            await r.expr( [ 'zoo', 'zoo' ] ).forEach( function( index ) {
+                return r.db( dbName ).table( tableName ).indexCreate( index )
+            } ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Index `zoo` already exists on table `' + dbName + '.' + tableName + '` in:\nr.expr(["zoo", "zoo"]).forEach(function(var_1) {\n    return r.db("' + dbName + '").table("' + tableName + '")\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n        .indexCreate(var_1)\n        ^^^^^^^^^^^^^^^^^^^\n})\n' )
+        }
+    } )
 
-  /*
+    /*
 //TODO Broken on the server
 Frames:
 []
@@ -221,17 +242,18 @@ r.db("91105f3567295643808ed9bab508ec25").table("35adbd4339c2fd4d285f27543e1663ec
   .indexDrop("nonExistingIndex")
   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 */
-  it('Test backtrace for r.db(dbName).table(tableName).indexDrop("nonExistingIndex")', async () => {
-    try {
-      r.nextVarId = 1
-      await r.db(dbName).table(tableName).indexDrop('nonExistingIndex').run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Index `nonExistingIndex` does not exist on table `' + dbName + '.' + tableName + '` in:\nr.db("' + dbName + '").table("' + tableName + '")\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    .indexDrop("nonExistingIndex")\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n')
-    }
-  })
+    it( 'Test backtrace for r.db(dbName).table(tableName).indexDrop("nonExistingIndex")', async () => {
+        try {
+            r.nextVarId = 1
+            await r.db( dbName ).table( tableName ).indexDrop( 'nonExistingIndex' ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Index `nonExistingIndex` does not exist on table `' + dbName + '.' + tableName + '` in:\nr.db("' + dbName + '").table("' + tableName + '")\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    .indexDrop("nonExistingIndex")\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n' )
+        }
+    } )
 
-  /*
+    /*
 //TODO Broken on the server
 Frames:
 [ { type: 'POS', pos: 0 }, { type: 'POS', pos: 1 } ]
@@ -244,17 +266,20 @@ r.db("7973e432e0aed7e4b1e6951f6049157d").table("37c62a0922bc471c6d751f8f75560cb8
          ^^^^^^^^^^^^^^
   })
 */
-  it('Test backtrace for r.db(dbName).table(tableName).indexList().do(function(x) { return x.add("a") })', async () => {
-    try {
-      r.nextVarId = 1
-      await r.db(dbName).table(tableName).indexList().do(function (x) { return x.add('a') }).run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Expected type ARRAY but found STRING in:\nr.db("' + dbName + '").table("' + tableName + '")\n    .indexList().do(function(var_1) {\n        return var_1.add("a")\n               ^^^^^^^^^^^^^^\n    })\n')
-    }
-  })
+    it( 'Test backtrace for r.db(dbName).table(tableName).indexList().do(function(x) { return x.add("a") })', async () => {
+        try {
+            r.nextVarId = 1
+            await r.db( dbName ).table( tableName ).indexList().do( function( x ) {
+                return x.add( 'a' )
+            } ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Expected type ARRAY but found STRING in:\nr.db("' + dbName + '").table("' + tableName + '")\n    .indexList().do(function(var_1) {\n        return var_1.add("a")\n               ^^^^^^^^^^^^^^\n    })\n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 //TODO Broken on the server
 [ { type: 'POS', pos: 0 }, { type: 'POS', pos: 1 } ]
@@ -267,17 +292,20 @@ r.db("a0d88feb61e3d0743bde45b625e7f237").table("8e1f71fefc1f86b66348c96466951df3
          ^^^^^^^^^^^^^^
   })
 */
-  it('Test backtrace for r.db(dbName).table(tableName).indexWait().do(function(x) { return x.add("a") })', async () => {
-    try {
-      r.nextVarId = 1
-      await r.db(dbName).table(tableName).indexWait().do(function (x) { return x.add('a') }).run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Expected type ARRAY but found STRING in:\nr.db("' + dbName + '").table("' + tableName + '")\n    .indexWait().do(function(var_1) {\n        return var_1.add("a")\n               ^^^^^^^^^^^^^^\n    })\n')
-    }
-  })
+    it( 'Test backtrace for r.db(dbName).table(tableName).indexWait().do(function(x) { return x.add("a") })', async () => {
+        try {
+            r.nextVarId = 1
+            await r.db( dbName ).table( tableName ).indexWait().do( function( x ) {
+                return x.add( 'a' )
+            } ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Expected type ARRAY but found STRING in:\nr.db("' + dbName + '").table("' + tableName + '")\n    .indexWait().do(function(var_1) {\n        return var_1.add("a")\n               ^^^^^^^^^^^^^^\n    })\n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 [ { type: 'POS', pos: 0 } ]
 
@@ -287,8 +315,8 @@ r.db("d095569a80834591e8053539e111299a").table("be4967584fdf58b6a5dab0cd633ba046
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
   .indexWait("foo", "bar")
 */
-  // https://github.com/rethinkdb/rethinkdb/issues/4501
-  /*
+    // https://github.com/rethinkdb/rethinkdb/issues/4501
+    /*
 it('Test backtrace for r.db(dbName).table(tableName).indexWait("foo", "bar")', async () => {
     r.nextVarId=1;
     await r.db(dbName).table(tableName).indexWait("foo", "bar").run()
@@ -300,7 +328,7 @@ it('Test backtrace for r.db(dbName).table(tableName).indexWait("foo", "bar")', a
 })
 */
 
-  /*
+    /*
 //TODO Broken on the server
 Frames:
 [ { type: 'POS', pos: 1 } ]
@@ -311,17 +339,18 @@ r.db("340daf900a4168235e5e21e53f8ccdd1").table("9276ce6940b79f4b4f64ab7812532c6e
   .indexStatus().and(r.expr(1).add("a"))
              ^^^^^^^^^^^^^^^^^^
 */
-  it('Test backtrace for r.db(dbName).table(tableName).indexStatus().and( r.expr(1).add("a"))', async () => {
-    try {
-      r.nextVarId = 1
-      await r.db(dbName).table(tableName).indexStatus().and(r.expr(1).add('a')).run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Expected type NUMBER but found STRING in:\nr.db("' + dbName + '").table("' + tableName + '")\n    .indexStatus().and(r.expr(1).add("a"))\n                       ^^^^^^^^^^^^^^^^^^ \n')
-    }
-  })
+    it( 'Test backtrace for r.db(dbName).table(tableName).indexStatus().and( r.expr(1).add("a"))', async () => {
+        try {
+            r.nextVarId = 1
+            await r.db( dbName ).table( tableName ).indexStatus().and( r.expr( 1 ).add( 'a' ) ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Expected type NUMBER but found STRING in:\nr.db("' + dbName + '").table("' + tableName + '")\n    .indexStatus().and(r.expr(1).add("a"))\n                       ^^^^^^^^^^^^^^^^^^ \n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 [ 1 ]
 
@@ -334,17 +363,20 @@ r.db("64f4fc7f01449d2b7aa567576b291659").table("449aba951895d77bc975046902f51310
         return var_1.add("a")
     })
 */
-  it('Test backtrace for r.db(dbName).table(tableName).indexStatus("foo", "bar").do(function(x) { return x.add("a") })', async () => {
-    try {
-      r.nextVarId = 1
-      await r.db(dbName).table(tableName).indexStatus('foo', 'bar').do(function (x) { return x.add('a') }).run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Index `bar` was not found on table `' + dbName + '.' + tableName + '` in:\nr.db("' + dbName + '").table("' + tableName + '")\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    .indexStatus("foo", "bar").do(function(var_1) {\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^                     \n        return var_1.add("a")\n    })\n')
-    }
-  })
+    it( 'Test backtrace for r.db(dbName).table(tableName).indexStatus("foo", "bar").do(function(x) { return x.add("a") })', async () => {
+        try {
+            r.nextVarId = 1
+            await r.db( dbName ).table( tableName ).indexStatus( 'foo', 'bar' ).do( function( x ) {
+                return x.add( 'a' )
+            } ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Index `bar` was not found on table `' + dbName + '.' + tableName + '` in:\nr.db("' + dbName + '").table("' + tableName + '")\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    .indexStatus("foo", "bar").do(function(var_1) {\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^                     \n        return var_1.add("a")\n    })\n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 [ 0 ]
 
@@ -355,17 +387,20 @@ r.db("882c5069473a016b03069a24679271c5").table("nonExistingTable").update({
   foo: "bar"
 })
 */
-  it('Test backtrace for r.db(dbName).table("nonExistingTable").update({foo: "bar"})', async () => {
-    try {
-      r.nextVarId = 1
-      await r.db(dbName).table('nonExistingTable').update({foo: 'bar'}).run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Table `' + dbName + '.nonExistingTable` does not exist in:\nr.db("' + dbName + '").table("nonExistingTable").update({\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^         \n    foo: "bar"\n})\n')
-    }
-  })
+    it( 'Test backtrace for r.db(dbName).table("nonExistingTable").update({foo: "bar"})', async () => {
+        try {
+            r.nextVarId = 1
+            await r.db( dbName ).table( 'nonExistingTable' ).update( {
+                foo: 'bar'
+            } ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Table `' + dbName + '.nonExistingTable` does not exist in:\nr.db("' + dbName + '").table("nonExistingTable").update({\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^         \n    foo: "bar"\n})\n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 [ 0 ]
 
@@ -376,17 +411,20 @@ r.db("8d192301ed6e6937c7d2e6d836f79b20").table("nonExistingTable").update(functi
   return var_1("foo")
 })
 */
-  it('Test backtrace for r.db(dbName).table("nonExistingTable").update(function(doc) { return doc("foo") })', async () => {
-    try {
-      r.nextVarId = 1
-      await r.db(dbName).table('nonExistingTable').update(function (doc) { return doc('foo') }).run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Table `' + dbName + '.nonExistingTable` does not exist in:\nr.db("' + dbName + '").table("nonExistingTable").update(function(var_1) {\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^                         \n    return var_1("foo")\n})\n')
-    }
-  })
+    it( 'Test backtrace for r.db(dbName).table("nonExistingTable").update(function(doc) { return doc("foo") })', async () => {
+        try {
+            r.nextVarId = 1
+            await r.db( dbName ).table( 'nonExistingTable' ).update( function( doc ) {
+                return doc( 'foo' )
+            } ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Table `' + dbName + '.nonExistingTable` does not exist in:\nr.db("' + dbName + '").table("nonExistingTable").update(function(var_1) {\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^                         \n    return var_1("foo")\n})\n' )
+        }
+    } )
 
-  /*
+    /*
 //TODO Broken on the server
 Frames:
 [ { type: 'POS', pos: 0 } ]
@@ -398,17 +436,20 @@ r.db("e7e04bbadd0f0b43f3561b32f2e1b5d6").table("nonExistingTable").replace({
   foo: "bar"
 })
 */
-  it('Test backtrace for r.db(dbName).table("nonExistingTable").replace({foo: "bar"})', async () => {
-    try {
-      r.nextVarId = 1
-      await r.db(dbName).table('nonExistingTable').replace({foo: 'bar'}).run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Table `' + dbName + '.nonExistingTable` does not exist in:\nr.db("' + dbName + '").table("nonExistingTable").replace({\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^          \n    foo: "bar"\n})\n')
-    }
-  })
+    it( 'Test backtrace for r.db(dbName).table("nonExistingTable").replace({foo: "bar"})', async () => {
+        try {
+            r.nextVarId = 1
+            await r.db( dbName ).table( 'nonExistingTable' ).replace( {
+                foo: 'bar'
+            } ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Table `' + dbName + '.nonExistingTable` does not exist in:\nr.db("' + dbName + '").table("nonExistingTable").replace({\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^          \n    foo: "bar"\n})\n' )
+        }
+    } )
 
-  /*
+    /*
 //TODO Broken on the server
 Frames:
 [ { type: 'POS', pos: 0 } ]
@@ -420,17 +461,20 @@ r.db("9ca06265cbe173eeb27decb1baedb031").table("nonExistingTable").replace(funct
   return var_1("foo")
 })
 */
-  it('Test backtrace for r.db(dbName).table("nonExistingTable").replace(function(doc) { return doc("foo") })', async () => {
-    try {
-      r.nextVarId = 1
-      await r.db(dbName).table('nonExistingTable').replace(function (doc) { return doc('foo') }).run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Table `' + dbName + '.nonExistingTable` does not exist in:\nr.db("' + dbName + '").table("nonExistingTable").replace(function(var_1) {\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^                          \n    return var_1("foo")\n})\n')
-    }
-  })
+    it( 'Test backtrace for r.db(dbName).table("nonExistingTable").replace(function(doc) { return doc("foo") })', async () => {
+        try {
+            r.nextVarId = 1
+            await r.db( dbName ).table( 'nonExistingTable' ).replace( function( doc ) {
+                return doc( 'foo' )
+            } ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Table `' + dbName + '.nonExistingTable` does not exist in:\nr.db("' + dbName + '").table("nonExistingTable").replace(function(var_1) {\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^                          \n    return var_1("foo")\n})\n' )
+        }
+    } )
 
-  /*
+    /*
 //TODO Broken on the server
 Frames:
 [ { type: 'POS', pos: 0 } ]
@@ -440,17 +484,18 @@ Table `nonExistingTable` does not exist in:
 r.db("0ec51cb31ddf56339cd7acab73b08a2c").table("nonExistingTable").delete()
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 */
-  it('Test backtrace for r.db(dbName).table("nonExistingTable").delete()', async () => {
-    try {
-      r.nextVarId = 1
-      await r.db(dbName).table('nonExistingTable').delete().run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Table `' + dbName + '.nonExistingTable` does not exist in:\nr.db("' + dbName + '").table("nonExistingTable").delete()\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^         \n')
-    }
-  })
+    it( 'Test backtrace for r.db(dbName).table("nonExistingTable").delete()', async () => {
+        try {
+            r.nextVarId = 1
+            await r.db( dbName ).table( 'nonExistingTable' ).delete().run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Table `' + dbName + '.nonExistingTable` does not exist in:\nr.db("' + dbName + '").table("nonExistingTable").delete()\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^         \n' )
+        }
+    } )
 
-  /*
+    /*
 //TODO Broken on the server
 Frames:
 [ { type: 'POS', pos: 0 } ]
@@ -460,17 +505,18 @@ Table `nonExistingTable` does not exist in:
 r.db("a01528b1d8902639d48b9c0adcc397a5").table("nonExistingTable").sync()
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 */
-  it('Test backtrace for r.db(dbName).table("nonExistingTable").sync()', async () => {
-    try {
-      r.nextVarId = 1
-      await r.db(dbName).table('nonExistingTable').sync().run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Table `' + dbName + '.nonExistingTable` does not exist in:\nr.db("' + dbName + '").table("nonExistingTable").sync()\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^       \n')
-    }
-  })
+    it( 'Test backtrace for r.db(dbName).table("nonExistingTable").sync()', async () => {
+        try {
+            r.nextVarId = 1
+            await r.db( dbName ).table( 'nonExistingTable' ).sync().run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Table `' + dbName + '.nonExistingTable` does not exist in:\nr.db("' + dbName + '").table("nonExistingTable").sync()\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^       \n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 [ { type: 'POS', pos: 0 } ]
 
@@ -479,17 +525,18 @@ Database `nonExistingDb` does not exist in:
 r.db("nonExistingDb").table("nonExistingTable")
 ^^^^^^^^^^^^^^^^^^^^^
 */
-  it('Test backtrace for r.db("nonExistingDb").table("nonExistingTable")', async () => {
-    try {
-      r.nextVarId = 1
-      await r.db('nonExistingDb').table('nonExistingTable').run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Database `nonExistingDb` does not exist in:\nr.db("nonExistingDb").table("nonExistingTable")\n^^^^^^^^^^^^^^^^^^^^^                          \n')
-    }
-  })
+    it( 'Test backtrace for r.db("nonExistingDb").table("nonExistingTable")', async () => {
+        try {
+            r.nextVarId = 1
+            await r.db( 'nonExistingDb' ).table( 'nonExistingTable' ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Database `nonExistingDb` does not exist in:\nr.db("nonExistingDb").table("nonExistingTable")\n^^^^^^^^^^^^^^^^^^^^^                          \n' )
+        }
+    } )
 
-  /*
+    /*
 //TODO Broken on the server
 Frames:
 []
@@ -499,17 +546,18 @@ Table `nonExistingTable` does not exist in:
 r.db("d1869ecfd2f2e939f5f9ff18b7293370").table("nonExistingTable")
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 */
-  it('Test backtrace for r.db(dbName).table("nonExistingTable")', async () => {
-    try {
-      r.nextVarId = 1
-      await r.db(dbName).table('nonExistingTable').run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Table `' + dbName + '.nonExistingTable` does not exist in:\nr.db("' + dbName + '").table("nonExistingTable")\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n')
-    }
-  })
+    it( 'Test backtrace for r.db(dbName).table("nonExistingTable")', async () => {
+        try {
+            r.nextVarId = 1
+            await r.db( dbName ).table( 'nonExistingTable' ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Table `' + dbName + '.nonExistingTable` does not exist in:\nr.db("' + dbName + '").table("nonExistingTable")\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 [ { type: 'POS', pos: 0 }, { type: 'POS', pos: 1 } ]
 
@@ -521,17 +569,20 @@ r.db("9a3275b288394920100ca6cd5d9ebc77").table("aaf8fd26eb4093b4bcd1c051acd44b80
          ^^^^^^^^^^^^
   })
 */
-  it('Test backtrace for r.db(dbName).table(tableName).get(1).do(function(x) { return x.add(3) })', async () => {
-    try {
-      r.nextVarId = 1
-      await r.db(dbName).table(tableName).get(1).do(function (x) { return x.add(3) }).run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Expected type NUMBER but found NULL in:\nr.db("' + dbName + '").table("' + tableName + '")\n    .get(1).do(function(var_1) {\n        return var_1.add(3)\n               ^^^^^^^^^^^^\n    })\n')
-    }
-  })
+    it( 'Test backtrace for r.db(dbName).table(tableName).get(1).do(function(x) { return x.add(3) })', async () => {
+        try {
+            r.nextVarId = 1
+            await r.db( dbName ).table( tableName ).get( 1 ).do( function( x ) {
+                return x.add( 3 )
+            } ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Expected type NUMBER but found NULL in:\nr.db("' + dbName + '").table("' + tableName + '")\n    .get(1).do(function(var_1) {\n        return var_1.add(3)\n               ^^^^^^^^^^^^\n    })\n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 [ 1 ]
 
@@ -545,17 +596,20 @@ r.db("cd911f3c958c1ec7637f7f2dc2827245").table("0c2967f3799eb2025b4cd92342dfe4a9
     return var_1.add(3)
   })
 */
-  it('Test backtrace for r.db(dbName).table(tableName).getAll(1, 2, 3).do(function(x) { return x.add(3) })', async () => {
-    try {
-      r.nextVarId = 1
-      await r.db(dbName).table(tableName).getAll(1, 2, 3).do(function (x) { return x.add(3) }).run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Expected type DATUM but found SELECTION:\nSELECTION ON table(' + tableName + ') in:\nr.db("' + dbName + '").table("' + tableName + '")\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    .getAll(1, 2, 3).do(function(var_1) {\n    ^^^^^^^^^^^^^^^^                     \n        return var_1.add(3)\n    })\n')
-    }
-  })
+    it( 'Test backtrace for r.db(dbName).table(tableName).getAll(1, 2, 3).do(function(x) { return x.add(3) })', async () => {
+        try {
+            r.nextVarId = 1
+            await r.db( dbName ).table( tableName ).getAll( 1, 2, 3 ).do( function( x ) {
+                return x.add( 3 )
+            } ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Expected type DATUM but found SELECTION:\nSELECTION ON table(' + tableName + ') in:\nr.db("' + dbName + '").table("' + tableName + '")\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    .getAll(1, 2, 3).do(function(var_1) {\n    ^^^^^^^^^^^^^^^^                     \n        return var_1.add(3)\n    })\n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 [ 1 ]
 
@@ -573,17 +627,22 @@ r.db("52bdcbc788f0c0b00357fa1840f62a81").table("2fb59ffdec1b6605369953703547f82d
     return var_1.add(3)
   })
 */
-  it('Test backtrace for r.db(dbName).table(tableName).getAll(1, 2, 3, { index: "foo"}).do(function(x) { return x.add(3) })', async () => {
-    try {
-      r.nextVarId = 1
-      await r.db(dbName).table(tableName).getAll(1, 2, 3, {index: 'foo'}).do(function (x) { return x.add(3) }).run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Expected type DATUM but found SELECTION:\nSELECTION ON table(' + tableName + ') in:\nr.db("' + dbName + '").table("' + tableName + '")\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    .getAll(1, 2, 3, {\n    ^^^^^^^^^^^^^^^^^^\n        index: "foo"\n        ^^^^^^^^^^^^\n    }).do(function(var_1) {\n    ^^                     \n        return var_1.add(3)\n    })\n')
-    }
-  })
+    it( 'Test backtrace for r.db(dbName).table(tableName).getAll(1, 2, 3, { index: "foo"}).do(function(x) { return x.add(3) })', async () => {
+        try {
+            r.nextVarId = 1
+            await r.db( dbName ).table( tableName ).getAll( 1, 2, 3, {
+                index: 'foo'
+            } ).do( function( x ) {
+                return x.add( 3 )
+            } ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Expected type DATUM but found SELECTION:\nSELECTION ON table(' + tableName + ') in:\nr.db("' + dbName + '").table("' + tableName + '")\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    .getAll(1, 2, 3, {\n    ^^^^^^^^^^^^^^^^^^\n        index: "foo"\n        ^^^^^^^^^^^^\n    }).do(function(var_1) {\n    ^^                     \n        return var_1.add(3)\n    })\n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 [ 1 ]
 
@@ -601,17 +660,22 @@ r.db("8bd65d3ca931f3587cc5f3acee0e9f6d").table("a163b9372202a469fa7485f6c20b9f4f
     return var_1.add(3)
   })
 */
-  it('Test backtrace for r.db(dbName).table(tableName).between(2, 3, { index: "foo"}).do(function(x) { return x.add(3) })', async () => {
-    try {
-      r.nextVarId = 1
-      await r.db(dbName).table(tableName).between(2, 3, {index: 'foo'}).do(function (x) { return x.add(3) }).run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Expected type DATUM but found TABLE_SLICE:\nSELECTION ON table(' + tableName + ') in:\nr.db("' + dbName + '").table("' + tableName + '")\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    .between(2, 3, {\n    ^^^^^^^^^^^^^^^^\n        index: "foo"\n        ^^^^^^^^^^^^\n    }).do(function(var_1) {\n    ^^                     \n        return var_1.add(3)\n    })\n')
-    }
-  })
+    it( 'Test backtrace for r.db(dbName).table(tableName).between(2, 3, { index: "foo"}).do(function(x) { return x.add(3) })', async () => {
+        try {
+            r.nextVarId = 1
+            await r.db( dbName ).table( tableName ).between( 2, 3, {
+                index: 'foo'
+            } ).do( function( x ) {
+                return x.add( 3 )
+            } ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Expected type DATUM but found TABLE_SLICE:\nSELECTION ON table(' + tableName + ') in:\nr.db("' + dbName + '").table("' + tableName + '")\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    .between(2, 3, {\n    ^^^^^^^^^^^^^^^^\n        index: "foo"\n        ^^^^^^^^^^^^\n    }).do(function(var_1) {\n    ^^                     \n        return var_1.add(3)\n    })\n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 [ 1 ]
 
@@ -629,17 +693,22 @@ r.db("39ae0baa00e8cb2da57783c544f569d3").table("775cb364800937836f7ecaafc6405cf0
     return var_1.add(3)
   })
 */
-  it('Test backtrace for r.db(dbName).table(tableName).filter({foo: "bar"}).do(function(x) { return x.add(3) })', async () => {
-    try {
-      r.nextVarId = 1
-      await r.db(dbName).table(tableName).filter({foo: 'bar'}).do(function (x) { return x.add(3) }).run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Expected type DATUM but found SELECTION:\nSELECTION ON table(' + tableName + ') in:\nr.db("' + dbName + '").table("' + tableName + '")\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    .filter({\n    ^^^^^^^^^\n        foo: "bar"\n        ^^^^^^^^^^\n    }).do(function(var_1) {\n    ^^                     \n        return var_1.add(3)\n    })\n')
-    }
-  })
+    it( 'Test backtrace for r.db(dbName).table(tableName).filter({foo: "bar"}).do(function(x) { return x.add(3) })', async () => {
+        try {
+            r.nextVarId = 1
+            await r.db( dbName ).table( tableName ).filter( {
+                foo: 'bar'
+            } ).do( function( x ) {
+                return x.add( 3 )
+            } ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Expected type DATUM but found SELECTION:\nSELECTION ON table(' + tableName + ') in:\nr.db("' + dbName + '").table("' + tableName + '")\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    .filter({\n    ^^^^^^^^^\n        foo: "bar"\n        ^^^^^^^^^^\n    }).do(function(var_1) {\n    ^^                     \n        return var_1.add(3)\n    })\n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 [ { type: 'POS', pos: 1 } ]
 
@@ -653,17 +722,20 @@ r.expr([1, 2, 3]).innerJoin(function(var_1, var_2) {
 }, r.db("3fdf480de398b8b0c5dee11b4594a38d").table("5f728046b728da8d63ace65a40aca6a6"))
 ^
 */
-  it('Test backtrace for r.expr([1,2,3]).innerJoin( function(left, right) { return left.eq(right("bar").add(1)) }, r.db(dbName).table(tableName))', async () => {
-    try {
-      r.nextVarId = 1
-      await r.expr([1, 2, 3]).innerJoin(function (left, right) { return left.eq(right('bar').add(1)) }, r.db(dbName).table(tableName)).run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Expected type SEQUENCE but found FUNCTION:\nVALUE FUNCTION in:\nr.expr([1, 2, 3]).innerJoin(function(var_1, var_2) {\n                            ^^^^^^^^^^^^^^^^^^^^^^^^\n    return var_1.eq(var_2("bar").add(1))\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n}, r.db("' + dbName + '").table("' + tableName + '"))\n^                                                                                     \n')
-    }
-  })
+    it( 'Test backtrace for r.expr([1,2,3]).innerJoin( function(left, right) { return left.eq(right("bar").add(1)) }, r.db(dbName).table(tableName))', async () => {
+        try {
+            r.nextVarId = 1
+            await r.expr( [ 1, 2, 3 ] ).innerJoin( function( left, right ) {
+                return left.eq( right( 'bar' ).add( 1 ) )
+            }, r.db( dbName ).table( tableName ) ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Expected type SEQUENCE but found FUNCTION:\nVALUE FUNCTION in:\nr.expr([1, 2, 3]).innerJoin(function(var_1, var_2) {\n                            ^^^^^^^^^^^^^^^^^^^^^^^^\n    return var_1.eq(var_2("bar").add(1))\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n}, r.db("' + dbName + '").table("' + tableName + '"))\n^                                                                                     \n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 [ { type: 'POS', pos: 2 },
   { type: 'POS', pos: 1 },
@@ -676,17 +748,20 @@ r.expr([1, 2, 3]).innerJoin([1, 2, 3], function(var_1, var_2) {
        ^^^^^^^^^^^^^^^^^^^^
 })
 */
-  it('Test backtrace for r.expr([1,2,3]).innerJoin(r.expr([1,2,3]), function(left, right) { return r.expr(1).add("str").add(left.eq(right("bar").add(1))) })', async () => {
-    try {
-      r.nextVarId = 1
-      await r.expr([1, 2, 3]).innerJoin(r.expr([1, 2, 3]), function (left, right) { return r.expr(1).add('str').add(left.eq(right('bar').add(1))) }).run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Expected type NUMBER but found STRING in:\nr.expr([1, 2, 3]).innerJoin([1, 2, 3], function(var_1, var_2) {\n    return r.expr(1).add("str").add(var_1.eq(var_2("bar").add(1)))\n           ^^^^^^^^^^^^^^^^^^^^                                   \n})\n')
-    }
-  })
+    it( 'Test backtrace for r.expr([1,2,3]).innerJoin(r.expr([1,2,3]), function(left, right) { return r.expr(1).add("str").add(left.eq(right("bar").add(1))) })', async () => {
+        try {
+            r.nextVarId = 1
+            await r.expr( [ 1, 2, 3 ] ).innerJoin( r.expr( [ 1, 2, 3 ] ), function( left, right ) {
+                return r.expr( 1 ).add( 'str' ).add( left.eq( right( 'bar' ).add( 1 ) ) )
+            } ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Expected type NUMBER but found STRING in:\nr.expr([1, 2, 3]).innerJoin([1, 2, 3], function(var_1, var_2) {\n    return r.expr(1).add("str").add(var_1.eq(var_2("bar").add(1)))\n           ^^^^^^^^^^^^^^^^^^^^                                   \n})\n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 [ { type: 'POS', pos: 1 } ]
 
@@ -700,17 +775,20 @@ r.expr([1, 2, 3]).outerJoin(function(var_1, var_2) {
 }, r.db("5f21a25338fff022c0f698f8681c03c0").table("1653b107790bf38e48448f3db99ab776"))
 ^
 */
-  it('Test backtrace for r.expr([1,2,3]).outerJoin( function(left, right) { return left.eq(right("bar").add(1)) }, r.db(dbName).table(tableName))', async () => {
-    try {
-      r.nextVarId = 1
-      await r.expr([1, 2, 3]).outerJoin(function (left, right) { return left.eq(right('bar').add(1)) }, r.db(dbName).table(tableName)).run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Expected type SEQUENCE but found FUNCTION:\nVALUE FUNCTION in:\nr.expr([1, 2, 3]).outerJoin(function(var_1, var_2) {\n                            ^^^^^^^^^^^^^^^^^^^^^^^^\n    return var_1.eq(var_2("bar").add(1))\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n}, r.db("' + dbName + '").table("' + tableName + '"))\n^                                                                                     \n')
-    }
-  })
+    it( 'Test backtrace for r.expr([1,2,3]).outerJoin( function(left, right) { return left.eq(right("bar").add(1)) }, r.db(dbName).table(tableName))', async () => {
+        try {
+            r.nextVarId = 1
+            await r.expr( [ 1, 2, 3 ] ).outerJoin( function( left, right ) {
+                return left.eq( right( 'bar' ).add( 1 ) )
+            }, r.db( dbName ).table( tableName ) ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Expected type SEQUENCE but found FUNCTION:\nVALUE FUNCTION in:\nr.expr([1, 2, 3]).outerJoin(function(var_1, var_2) {\n                            ^^^^^^^^^^^^^^^^^^^^^^^^\n    return var_1.eq(var_2("bar").add(1))\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n}, r.db("' + dbName + '").table("' + tableName + '"))\n^                                                                                     \n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 [ { type: 'POS', pos: 0 }, { type: 'POS', pos: 1 } ]
 
@@ -720,21 +798,22 @@ r.expr([1, 2, 3]).eqJoin("id", r.db("5500af7b5c2c94b2672a5f0029512757").table("8
              ^^^^
   .add(1)
 */
-  it('Test backtrace for r.expr([1,2,3]).eqJoin("id", r.db(dbName).table(tableName)).add(1)', async () => {
-    try {
-      r.nextVarId = 1
-      await r.expr([1, 2, 3]).eqJoin('id', r.db(dbName).table(tableName)).add(1).run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === `Cannot perform get_field on a non-object non-sequence \`1\` in:
+    it( 'Test backtrace for r.expr([1,2,3]).eqJoin("id", r.db(dbName).table(tableName)).add(1)', async () => {
+        try {
+            r.nextVarId = 1
+            await r.expr( [ 1, 2, 3 ] ).eqJoin( 'id', r.db( dbName ).table( tableName ) ).add( 1 ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === `Cannot perform get_field on a non-object non-sequence \`1\` in:
 r.expr([1, 2, 3]).eqJoin("id", r.db("${dbName}").table("${tableName}"))
-                         ^^^^                                                                                     
+                         ^^^^
     .add(1)
-`)
-    }
-  })
+` )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 [ { type: 'POS', pos: 0 },
   { type: 'POS', pos: 0 },
@@ -746,17 +825,18 @@ r.expr([1, 2, 3]).eqJoin("id", r.db("2c1030e5160e4af3bb19923d43fe7d6c").table("8
              ^^^^
   .zip().add(1)
 */
-  it('Test backtrace for r.expr([1,2,3]).eqJoin("id", r.db(dbName).table(tableName)).zip().add(1)', async () => {
-    try {
-      r.nextVarId = 1
-      await r.expr([1, 2, 3]).eqJoin('id', r.db(dbName).table(tableName)).zip().add(1).run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Cannot perform get_field on a non-object non-sequence `1` in:\nr.expr([1, 2, 3]).eqJoin("id", r.db("' + dbName + '").table("' + tableName + '"))\n                         ^^^^                                                                                     \n    .zip().add(1)\n')
-    }
-  })
+    it( 'Test backtrace for r.expr([1,2,3]).eqJoin("id", r.db(dbName).table(tableName)).zip().add(1)', async () => {
+        try {
+            r.nextVarId = 1
+            await r.expr( [ 1, 2, 3 ] ).eqJoin( 'id', r.db( dbName ).table( tableName ) ).zip().add( 1 ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Cannot perform get_field on a non-object non-sequence `1` in:\nr.expr([1, 2, 3]).eqJoin("id", r.db("' + dbName + '").table("' + tableName + '"))\n                         ^^^^                                                                                     \n    .zip().add(1)\n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 []
 
@@ -769,17 +849,20 @@ r.expr([1, 2, 3]).map(function(var_1) {
 }).add(1)
 ^^^^^^^^^
 */
-  it('Test backtrace for r.expr([1,2,3]).map(function(v) { return v}).add(1)', async () => {
-    try {
-      r.nextVarId = 1
-      await r.expr([1, 2, 3]).map(function (v) { return v }).add(1).run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Expected type ARRAY but found NUMBER in:\nr.expr([1, 2, 3]).map(function(var_1) {\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    return var_1\n    ^^^^^^^^^^^^\n}).add(1)\n^^^^^^^^^\n')
-    }
-  })
+    it( 'Test backtrace for r.expr([1,2,3]).map(function(v) { return v}).add(1)', async () => {
+        try {
+            r.nextVarId = 1
+            await r.expr( [ 1, 2, 3 ] ).map( function( v ) {
+                return v
+            } ).add( 1 ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Expected type ARRAY but found NUMBER in:\nr.expr([1, 2, 3]).map(function(var_1) {\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    return var_1\n    ^^^^^^^^^^^^\n}).add(1)\n^^^^^^^^^\n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 [ { type: 'POS', pos: 0 } ]
 
@@ -788,17 +871,18 @@ Cannot perform has_fields on a non-object non-sequence `1` in:
 r.expr([1, 2, 3]).withFields("foo", "bar").add(1)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 */
-  it('Test backtrace for r.expr([1,2,3]).withFields("foo", "bar").add(1)', async () => {
-    try {
-      r.nextVarId = 1
-      await r.expr([1, 2, 3]).withFields('foo', 'bar').add(1).run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Cannot perform has_fields on a non-object non-sequence `1` in:\nr.expr([1, 2, 3]).withFields("foo", "bar").add(1)\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^       \n')
-    }
-  })
+    it( 'Test backtrace for r.expr([1,2,3]).withFields("foo", "bar").add(1)', async () => {
+        try {
+            r.nextVarId = 1
+            await r.expr( [ 1, 2, 3 ] ).withFields( 'foo', 'bar' ).add( 1 ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Cannot perform has_fields on a non-object non-sequence `1` in:\nr.expr([1, 2, 3]).withFields("foo", "bar").add(1)\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^       \n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 [ 0, 1 ]
 
@@ -811,17 +895,20 @@ r.expr([1, 2, 3]).concatMap(function(var_1) {
 }).add(1)
 ^
 */
-  it('Test backtrace for r.expr([1,2,3]).concatMap(function(v) { return v}).add(1)', async () => {
-    try {
-      r.nextVarId = 1
-      await r.expr([1, 2, 3]).concatMap(function (v) { return v }).add(1).run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Cannot convert NUMBER to SEQUENCE in:\nr.expr([1, 2, 3]).concatMap(function(var_1) {\n                            ^^^^^^^^^^^^^^^^^\n    return var_1\n    ^^^^^^^^^^^^\n}).add(1)\n^        \n')
-    }
-  })
+    it( 'Test backtrace for r.expr([1,2,3]).concatMap(function(v) { return v}).add(1)', async () => {
+        try {
+            r.nextVarId = 1
+            await r.expr( [ 1, 2, 3 ] ).concatMap( function( v ) {
+                return v
+            } ).add( 1 ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Cannot convert NUMBER to SEQUENCE in:\nr.expr([1, 2, 3]).concatMap(function(var_1) {\n                            ^^^^^^^^^^^^^^^^^\n    return var_1\n    ^^^^^^^^^^^^\n}).add(1)\n^        \n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 [ { type: 'POS', pos: 0 }, { type: 'POS', pos: 1 } ]
 
@@ -830,20 +917,21 @@ Cannot perform get_field on a non-object non-sequence `2` in:
 r.expr([1, 2, 3]).orderBy("foo").add(1)
               ^^^^^
 */
-  it('Test backtrace for r.expr([1,2,3]).orderBy("foo").add(1)', async () => {
-    try {
-      r.nextVarId = 1
-      await r.expr([1, 2, 3]).orderBy('foo').add(1).run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === `Cannot perform get_field on a non-object non-sequence \`2\` in:
+    it( 'Test backtrace for r.expr([1,2,3]).orderBy("foo").add(1)', async () => {
+        try {
+            r.nextVarId = 1
+            await r.expr( [ 1, 2, 3 ] ).orderBy( 'foo' ).add( 1 ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === `Cannot perform get_field on a non-object non-sequence \`2\` in:
 r.expr([1, 2, 3]).orderBy("foo").add(1)
-                          ^^^^^        
-`)
-    }
-  })
+                          ^^^^^
+` )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 [ { type: 'POS', pos: 0 }, { type: 'POS', pos: 1 } ]
 
@@ -852,17 +940,18 @@ Expected type NUMBER but found STRING in:
 r.expr([1, 2, 3]).skip("foo").add(1)
              ^^^^^
 */
-  it('Test backtrace for r.expr([1,2,3]).skip("foo").add(1)', async () => {
-    try {
-      r.nextVarId = 1
-      await r.expr([1, 2, 3]).skip('foo').add(1).run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Expected type NUMBER but found STRING in:\nr.expr([1, 2, 3]).skip("foo").add(1)\n                       ^^^^^        \n')
-    }
-  })
+    it( 'Test backtrace for r.expr([1,2,3]).skip("foo").add(1)', async () => {
+        try {
+            r.nextVarId = 1
+            await r.expr( [ 1, 2, 3 ] ).skip( 'foo' ).add( 1 ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Expected type NUMBER but found STRING in:\nr.expr([1, 2, 3]).skip("foo").add(1)\n                       ^^^^^        \n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 [ { type: 'POS', pos: 0 }, { type: 'POS', pos: 1 } ]
 
@@ -871,17 +960,18 @@ Expected type NUMBER but found STRING in:
 r.expr([1, 2, 3]).limit("foo").add(1)
             ^^^^^
 */
-  it('Test backtrace for r.expr([1,2,3]).limit("foo").add(1)', async () => {
-    try {
-      r.nextVarId = 1
-      await r.expr([1, 2, 3]).limit('foo').add(1).run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Expected type NUMBER but found STRING in:\nr.expr([1, 2, 3]).limit("foo").add(1)\n                        ^^^^^        \n')
-    }
-  })
+    it( 'Test backtrace for r.expr([1,2,3]).limit("foo").add(1)', async () => {
+        try {
+            r.nextVarId = 1
+            await r.expr( [ 1, 2, 3 ] ).limit( 'foo' ).add( 1 ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Expected type NUMBER but found STRING in:\nr.expr([1, 2, 3]).limit("foo").add(1)\n                        ^^^^^        \n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 [ { type: 'POS', pos: 0 }, { type: 'POS', pos: 1 } ]
 
@@ -890,17 +980,18 @@ Expected type NUMBER but found STRING in:
 r.expr([1, 2, 3]).slice("foo", "bar").add(1)
             ^^^^^
 */
-  it('Test backtrace for r.expr([1,2,3]).slice("foo", "bar").add(1)', async () => {
-    try {
-      r.nextVarId = 1
-      await r.expr([1, 2, 3]).slice('foo', 'bar').add(1).run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Expected type NUMBER but found STRING in:\nr.expr([1, 2, 3]).slice("foo", "bar").add(1)\n                        ^^^^^               \n')
-    }
-  })
+    it( 'Test backtrace for r.expr([1,2,3]).slice("foo", "bar").add(1)', async () => {
+        try {
+            r.nextVarId = 1
+            await r.expr( [ 1, 2, 3 ] ).slice( 'foo', 'bar' ).add( 1 ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Expected type NUMBER but found STRING in:\nr.expr([1, 2, 3]).slice("foo", "bar").add(1)\n                        ^^^^^               \n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 [ { type: 'POS', pos: 0 }, { type: 'POS', pos: 1 } ]
 
@@ -909,17 +1000,18 @@ Expected type NUMBER but found STRING in:
 r.expr([1, 2, 3]).nth("bar").add(1)
             ^^^^^
 */
-  it('Test backtrace for r.expr([1,2,3]).nth("bar").add(1)', async () => {
-    try {
-      r.nextVarId = 1
-      await r.expr([1, 2, 3]).nth('bar').add(1).run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Expected type NUMBER but found STRING in:\nr.expr([1, 2, 3]).nth("bar").add(1)\n                      ^^^^^        \n')
-    }
-  })
+    it( 'Test backtrace for r.expr([1,2,3]).nth("bar").add(1)', async () => {
+        try {
+            r.nextVarId = 1
+            await r.expr( [ 1, 2, 3 ] ).nth( 'bar' ).add( 1 ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Expected type NUMBER but found STRING in:\nr.expr([1, 2, 3]).nth("bar").add(1)\n                      ^^^^^        \n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 []
 
@@ -928,17 +1020,18 @@ Expected type ARRAY but found STRING in:
 r.expr([1, 2, 3]).offsetsOf("bar").add("Hello")
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 */
-  it('Test backtrace for r.expr([1, 2, 3]).offsetsOf("bar").add("Hello")', async () => {
-    try {
-      r.nextVarId = 1
-      await r.expr([1, 2, 3]).offsetsOf('bar').add('Hello').run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Expected type ARRAY but found STRING in:\nr.expr([1, 2, 3]).offsetsOf("bar").add("Hello")\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n')
-    }
-  })
+    it( 'Test backtrace for r.expr([1, 2, 3]).offsetsOf("bar").add("Hello")', async () => {
+        try {
+            r.nextVarId = 1
+            await r.expr( [ 1, 2, 3 ] ).offsetsOf( 'bar' ).add( 'Hello' ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Expected type ARRAY but found STRING in:\nr.expr([1, 2, 3]).offsetsOf("bar").add("Hello")\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 []
 
@@ -947,17 +1040,18 @@ Expected type NUMBER but found BOOL in:
 r.expr([1, 2, 3]).isEmpty().add("Hello")
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 */
-  it('Test backtrace for r.expr([1,2,3]).isEmpty().add("Hello")', async () => {
-    try {
-      r.nextVarId = 1
-      await r.expr([1, 2, 3]).isEmpty().add('Hello').run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Expected type NUMBER but found BOOL in:\nr.expr([1, 2, 3]).isEmpty().add("Hello")\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n')
-    }
-  })
+    it( 'Test backtrace for r.expr([1,2,3]).isEmpty().add("Hello")', async () => {
+        try {
+            r.nextVarId = 1
+            await r.expr( [ 1, 2, 3 ] ).isEmpty().add( 'Hello' ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Expected type NUMBER but found BOOL in:\nr.expr([1, 2, 3]).isEmpty().add("Hello")\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 []
 
@@ -966,17 +1060,18 @@ Expected type ARRAY but found STRING in:
 r.expr([1, 2, 3]).union([5, 6]).add("Hello")
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 */
-  it('Test backtrace for r.expr([1,2,3]).union([5,6]).add("Hello")', async () => {
-    try {
-      r.nextVarId = 1
-      await r.expr([1, 2, 3]).union([5, 6]).add('Hello').run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Expected type ARRAY but found STRING in:\nr.expr([1, 2, 3]).union([5, 6]).add("Hello")\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n')
-    }
-  })
+    it( 'Test backtrace for r.expr([1,2,3]).union([5,6]).add("Hello")', async () => {
+        try {
+            r.nextVarId = 1
+            await r.expr( [ 1, 2, 3 ] ).union( [ 5, 6 ] ).add( 'Hello' ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Expected type ARRAY but found STRING in:\nr.expr([1, 2, 3]).union([5, 6]).add("Hello")\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 [ { type: 'POS', pos: 1 } ]
 
@@ -985,17 +1080,18 @@ Expected type NUMBER but found STRING in:
 r.expr([1, 2, 3]).sample("Hello")
              ^^^^^^^
 */
-  it('Test backtrace for r.expr([1,2,3]).sample("Hello")', async () => {
-    try {
-      r.nextVarId = 1
-      await r.expr([1, 2, 3]).sample('Hello').run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Expected type NUMBER but found STRING in:\nr.expr([1, 2, 3]).sample("Hello")\n                         ^^^^^^^ \n')
-    }
-  })
+    it( 'Test backtrace for r.expr([1,2,3]).sample("Hello")', async () => {
+        try {
+            r.nextVarId = 1
+            await r.expr( [ 1, 2, 3 ] ).sample( 'Hello' ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Expected type NUMBER but found STRING in:\nr.expr([1, 2, 3]).sample("Hello")\n                         ^^^^^^^ \n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 []
 
@@ -1008,17 +1104,20 @@ r.expr([1, 2, 3]).count(function() {
 }).add("Hello")
 ^^^^^^^^^^^^^^^
 */
-  it('Test backtrace for r.expr([1,2,3]).count(function() { return true}).add("Hello")', async () => {
-    try {
-      r.nextVarId = 1
-      await r.expr([1, 2, 3]).count(function () { return true }).add('Hello').run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Expected type NUMBER but found STRING in:\nr.expr([1, 2, 3]).count(function() {\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    return true\n    ^^^^^^^^^^^\n}).add("Hello")\n^^^^^^^^^^^^^^^\n')
-    }
-  })
+    it( 'Test backtrace for r.expr([1,2,3]).count(function() { return true}).add("Hello")', async () => {
+        try {
+            r.nextVarId = 1
+            await r.expr( [ 1, 2, 3 ] ).count( function() {
+                return true
+            } ).add( 'Hello' ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Expected type NUMBER but found STRING in:\nr.expr([1, 2, 3]).count(function() {\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    return true\n    ^^^^^^^^^^^\n}).add("Hello")\n^^^^^^^^^^^^^^^\n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 []
 
@@ -1027,17 +1126,18 @@ Expected type ARRAY but found STRING in:
 r.expr([1, 2, 3]).distinct().add("Hello")
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 */
-  it('Test backtrace for r.expr([1,2,3]).distinct().add("Hello")', async () => {
-    try {
-      r.nextVarId = 1
-      await r.expr([1, 2, 3]).distinct().add('Hello').run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Expected type ARRAY but found STRING in:\nr.expr([1, 2, 3]).distinct().add("Hello")\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n')
-    }
-  })
+    it( 'Test backtrace for r.expr([1,2,3]).distinct().add("Hello")', async () => {
+        try {
+            r.nextVarId = 1
+            await r.expr( [ 1, 2, 3 ] ).distinct().add( 'Hello' ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Expected type ARRAY but found STRING in:\nr.expr([1, 2, 3]).distinct().add("Hello")\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 []
 
@@ -1046,17 +1146,18 @@ Expected type NUMBER but found BOOL in:
 r.expr([1, 2, 3]).contains("foo", "bar").add("Hello")
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 */
-  it('Test backtrace for r.expr([1,2,3]).contains("foo", "bar").add("Hello")', async () => {
-    try {
-      r.nextVarId = 1
-      await r.expr([1, 2, 3]).contains('foo', 'bar').add('Hello').run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Expected type NUMBER but found BOOL in:\nr.expr([1, 2, 3]).contains("foo", "bar").add("Hello")\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n')
-    }
-  })
+    it( 'Test backtrace for r.expr([1,2,3]).contains("foo", "bar").add("Hello")', async () => {
+        try {
+            r.nextVarId = 1
+            await r.expr( [ 1, 2, 3 ] ).contains( 'foo', 'bar' ).add( 'Hello' ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Expected type NUMBER but found BOOL in:\nr.expr([1, 2, 3]).contains("foo", "bar").add("Hello")\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 [ 0, 0 ]
 
@@ -1070,17 +1171,18 @@ Expected type SELECTION but found DATUM:
 r.expr([1, 2, 3]).update(r.row("foo")).add("Hello")
 ^^^^^^^^^^^^^^^^^
 */
-  it('Test backtrace for r.expr([1,2,3]).update(r.row("foo")).add("Hello")', async () => {
-    try {
-      r.nextVarId = 1
-      await r.expr([1, 2, 3]).update(r.row('foo')).add('Hello').run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Expected type SELECTION but found DATUM:\n[\n\t1,\n\t2,\n\t3\n] in:\nr.expr([1, 2, 3]).update(r.row("foo")).add("Hello")\n^^^^^^^^^^^^^^^^^                                  \n')
-    }
-  })
+    it( 'Test backtrace for r.expr([1,2,3]).update(r.row("foo")).add("Hello")', async () => {
+        try {
+            r.nextVarId = 1
+            await r.expr( [ 1, 2, 3 ] ).update( r.row( 'foo' ) ).add( 'Hello' ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Expected type SELECTION but found DATUM:\n[\n\t1,\n\t2,\n\t3\n] in:\nr.expr([1, 2, 3]).update(r.row("foo")).add("Hello")\n^^^^^^^^^^^^^^^^^                                  \n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 [ { type: 'POS', pos: 0 } ]
 
@@ -1089,17 +1191,18 @@ Cannot perform pluck on a non-object non-sequence `1` in:
 r.expr([1, 2, 3]).pluck("foo").add("Hello")
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 */
-  it('Test backtrace for r.expr([1,2,3]).pluck("foo").add("Hello")', async () => {
-    try {
-      r.nextVarId = 1
-      await r.expr([1, 2, 3]).pluck('foo').add('Hello').run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Cannot perform pluck on a non-object non-sequence `1` in:\nr.expr([1, 2, 3]).pluck("foo").add("Hello")\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^             \n')
-    }
-  })
+    it( 'Test backtrace for r.expr([1,2,3]).pluck("foo").add("Hello")', async () => {
+        try {
+            r.nextVarId = 1
+            await r.expr( [ 1, 2, 3 ] ).pluck( 'foo' ).add( 'Hello' ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Cannot perform pluck on a non-object non-sequence `1` in:\nr.expr([1, 2, 3]).pluck("foo").add("Hello")\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^             \n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 [ { type: 'POS', pos: 0 } ]
 
@@ -1108,17 +1211,18 @@ Cannot perform without on a non-object non-sequence `1` in:
 r.expr([1, 2, 3]).without("foo").add("Hello")
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 */
-  it('Test backtrace for r.expr([1,2,3]).without("foo").add("Hello")', async () => {
-    try {
-      r.nextVarId = 1
-      await r.expr([1, 2, 3]).without('foo').add('Hello').run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Cannot perform without on a non-object non-sequence `1` in:\nr.expr([1, 2, 3]).without("foo").add("Hello")\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^             \n')
-    }
-  })
+    it( 'Test backtrace for r.expr([1,2,3]).without("foo").add("Hello")', async () => {
+        try {
+            r.nextVarId = 1
+            await r.expr( [ 1, 2, 3 ] ).without( 'foo' ).add( 'Hello' ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Cannot perform without on a non-object non-sequence `1` in:\nr.expr([1, 2, 3]).without("foo").add("Hello")\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^             \n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 [ { type: 'POS', pos: 0 } ]
 
@@ -1127,17 +1231,18 @@ Cannot perform merge on a non-object non-sequence `1` in:
 r.expr([1, 2, 3]).merge("foo").add("Hello")
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 */
-  it('Test backtrace for r.expr([1,2,3]).merge("foo").add("Hello")', async () => {
-    try {
-      r.nextVarId = 1
-      await r.expr([1, 2, 3]).merge('foo').add('Hello').run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Cannot perform merge on a non-object non-sequence `1` in:\nr.expr([1, 2, 3]).merge("foo").add("Hello")\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^             \n')
-    }
-  })
+    it( 'Test backtrace for r.expr([1,2,3]).merge("foo").add("Hello")', async () => {
+        try {
+            r.nextVarId = 1
+            await r.expr( [ 1, 2, 3 ] ).merge( 'foo' ).add( 'Hello' ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Cannot perform merge on a non-object non-sequence `1` in:\nr.expr([1, 2, 3]).merge("foo").add("Hello")\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^             \n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 []
 
@@ -1146,17 +1251,18 @@ Expected type ARRAY but found STRING in:
 r.expr([1, 2, 3]).append("foo").add("Hello")
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 */
-  it('Test backtrace for r.expr([1,2,3]).append("foo").add("Hello")', async () => {
-    try {
-      r.nextVarId = 1
-      await r.expr([1, 2, 3]).append('foo').add('Hello').run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Expected type ARRAY but found STRING in:\nr.expr([1, 2, 3]).append("foo").add("Hello")\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n')
-    }
-  })
+    it( 'Test backtrace for r.expr([1,2,3]).append("foo").add("Hello")', async () => {
+        try {
+            r.nextVarId = 1
+            await r.expr( [ 1, 2, 3 ] ).append( 'foo' ).add( 'Hello' ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Expected type ARRAY but found STRING in:\nr.expr([1, 2, 3]).append("foo").add("Hello")\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 []
 
@@ -1165,17 +1271,18 @@ Expected type ARRAY but found STRING in:
 r.expr([1, 2, 3]).prepend("foo").add("Hello")
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 */
-  it('Test backtrace for r.expr([1,2,3]).prepend("foo").add("Hello")', async () => {
-    try {
-      r.nextVarId = 1
-      await r.expr([1, 2, 3]).prepend('foo').add('Hello').run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Expected type ARRAY but found STRING in:\nr.expr([1, 2, 3]).prepend("foo").add("Hello")\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n')
-    }
-  })
+    it( 'Test backtrace for r.expr([1,2,3]).prepend("foo").add("Hello")', async () => {
+        try {
+            r.nextVarId = 1
+            await r.expr( [ 1, 2, 3 ] ).prepend( 'foo' ).add( 'Hello' ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Expected type ARRAY but found STRING in:\nr.expr([1, 2, 3]).prepend("foo").add("Hello")\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 [ { type: 'POS', pos: 0 } ]
 
@@ -1184,17 +1291,18 @@ Cannot convert STRING to SEQUENCE in:
 r.expr([1, 2, 3]).difference("foo").add("Hello")
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 */
-  it('Test backtrace for r.expr([1,2,3]).difference("foo").add("Hello")', async () => {
-    try {
-      r.nextVarId = 1
-      await r.expr([1, 2, 3]).difference('foo').add('Hello').run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Cannot convert STRING to SEQUENCE in:\nr.expr([1, 2, 3]).difference("foo").add("Hello")\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^             \n')
-    }
-  })
+    it( 'Test backtrace for r.expr([1,2,3]).difference("foo").add("Hello")', async () => {
+        try {
+            r.nextVarId = 1
+            await r.expr( [ 1, 2, 3 ] ).difference( 'foo' ).add( 'Hello' ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Cannot convert STRING to SEQUENCE in:\nr.expr([1, 2, 3]).difference("foo").add("Hello")\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^             \n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 []
 
@@ -1203,17 +1311,18 @@ Expected type ARRAY but found STRING in:
 r.expr([1, 2, 3]).setInsert("foo").add("Hello")
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 */
-  it('Test backtrace for r.expr([1,2,3]).setInsert("foo").add("Hello")', async () => {
-    try {
-      r.nextVarId = 1
-      await r.expr([1, 2, 3]).setInsert('foo').add('Hello').run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Expected type ARRAY but found STRING in:\nr.expr([1, 2, 3]).setInsert("foo").add("Hello")\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n')
-    }
-  })
+    it( 'Test backtrace for r.expr([1,2,3]).setInsert("foo").add("Hello")', async () => {
+        try {
+            r.nextVarId = 1
+            await r.expr( [ 1, 2, 3 ] ).setInsert( 'foo' ).add( 'Hello' ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Expected type ARRAY but found STRING in:\nr.expr([1, 2, 3]).setInsert("foo").add("Hello")\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 [ { type: 'POS', pos: 0 } ]
 
@@ -1222,17 +1331,18 @@ Expected type ARRAY but found STRING in:
 r.expr([1, 2, 3]).setUnion("foo").add("Hello")
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 */
-  it('Test backtrace for r.expr([1,2,3]).setUnion("foo").add("Hello")', async () => {
-    try {
-      r.nextVarId = 1
-      await r.expr([1, 2, 3]).setUnion('foo').add('Hello').run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Expected type ARRAY but found STRING in:\nr.expr([1, 2, 3]).setUnion("foo").add("Hello")\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^             \n')
-    }
-  })
+    it( 'Test backtrace for r.expr([1,2,3]).setUnion("foo").add("Hello")', async () => {
+        try {
+            r.nextVarId = 1
+            await r.expr( [ 1, 2, 3 ] ).setUnion( 'foo' ).add( 'Hello' ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Expected type ARRAY but found STRING in:\nr.expr([1, 2, 3]).setUnion("foo").add("Hello")\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^             \n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 [ { type: 'POS', pos: 0 } ]
 
@@ -1241,17 +1351,18 @@ Expected type ARRAY but found STRING in:
 r.expr([1, 2, 3]).setIntersection("foo").add("Hello")
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 */
-  it('Test backtrace for r.expr([1,2,3]).setIntersection("foo").add("Hello")', async () => {
-    try {
-      r.nextVarId = 1
-      await r.expr([1, 2, 3]).setIntersection('foo').add('Hello').run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Expected type ARRAY but found STRING in:\nr.expr([1, 2, 3]).setIntersection("foo").add("Hello")\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^             \n')
-    }
-  })
+    it( 'Test backtrace for r.expr([1,2,3]).setIntersection("foo").add("Hello")', async () => {
+        try {
+            r.nextVarId = 1
+            await r.expr( [ 1, 2, 3 ] ).setIntersection( 'foo' ).add( 'Hello' ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Expected type ARRAY but found STRING in:\nr.expr([1, 2, 3]).setIntersection("foo").add("Hello")\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^             \n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 [ 0 ]
 
@@ -1260,17 +1371,18 @@ Cannot perform bracket on a non-object non-sequence `1` in:
 r.expr([1, 2, 3])("foo").add("Hello")
 ^^^^^^^^^^^^^^^^^^^^^^^^
 */
-  it('Test backtrace for r.expr([1, 2, 3])("foo").add("Hello")', async () => {
-    try {
-      r.nextVarId = 1
-      await r.expr([1, 2, 3])('foo').add('Hello').run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Cannot perform bracket on a non-object non-sequence `1` in:\nr.expr([1, 2, 3])("foo").add("Hello")\n^^^^^^^^^^^^^^^^^^^^^^^^             \n')
-    }
-  })
+    it( 'Test backtrace for r.expr([1, 2, 3])("foo").add("Hello")', async () => {
+        try {
+            r.nextVarId = 1
+            await r.expr( [ 1, 2, 3 ] )( 'foo' ).add( 'Hello' ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Cannot perform bracket on a non-object non-sequence `1` in:\nr.expr([1, 2, 3])("foo").add("Hello")\n^^^^^^^^^^^^^^^^^^^^^^^^             \n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 [ { type: 'POS', pos: 0 } ]
 
@@ -1279,17 +1391,18 @@ Cannot perform has_fields on a non-object non-sequence `1` in:
 r.expr([1, 2, 3]).hasFields("foo").add("Hello")
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 */
-  it('Test backtrace for r.expr([1,2,3]).hasFields("foo").add("Hello")', async () => {
-    try {
-      r.nextVarId = 1
-      await r.expr([1, 2, 3]).hasFields('foo').add('Hello').run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Cannot perform has_fields on a non-object non-sequence `1` in:\nr.expr([1, 2, 3]).hasFields("foo").add("Hello")\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^             \n')
-    }
-  })
+    it( 'Test backtrace for r.expr([1,2,3]).hasFields("foo").add("Hello")', async () => {
+        try {
+            r.nextVarId = 1
+            await r.expr( [ 1, 2, 3 ] ).hasFields( 'foo' ).add( 'Hello' ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Cannot perform has_fields on a non-object non-sequence `1` in:\nr.expr([1, 2, 3]).hasFields("foo").add("Hello")\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^             \n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 [ { type: 'POS', pos: 0 } ]
 
@@ -1298,17 +1411,18 @@ Expected type NUMBER but found STRING in:
 r.expr([1, 2, 3]).insertAt("foo", 2).add("Hello")
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 */
-  it('Test backtrace for r.expr([1,2,3]).insertAt("foo", 2).add("Hello")', async () => {
-    try {
-      r.nextVarId = 1
-      await r.expr([1, 2, 3]).insertAt('foo', 2).add('Hello').run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Expected type NUMBER but found STRING in:\nr.expr([1, 2, 3]).insertAt("foo", 2).add("Hello")\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^             \n')
-    }
-  })
+    it( 'Test backtrace for r.expr([1,2,3]).insertAt("foo", 2).add("Hello")', async () => {
+        try {
+            r.nextVarId = 1
+            await r.expr( [ 1, 2, 3 ] ).insertAt( 'foo', 2 ).add( 'Hello' ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Expected type NUMBER but found STRING in:\nr.expr([1, 2, 3]).insertAt("foo", 2).add("Hello")\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^             \n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 [ { type: 'POS', pos: 0 } ]
 
@@ -1317,17 +1431,18 @@ Expected type NUMBER but found STRING in:
 r.expr([1, 2, 3]).spliceAt("foo", 2).add("Hello")
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 */
-  it('Test backtrace for r.expr([1,2,3]).spliceAt("foo", 2).add("Hello")', async () => {
-    try {
-      r.nextVarId = 1
-      await r.expr([1, 2, 3]).spliceAt('foo', 2).add('Hello').run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Expected type NUMBER but found STRING in:\nr.expr([1, 2, 3]).spliceAt("foo", 2).add("Hello")\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^             \n')
-    }
-  })
+    it( 'Test backtrace for r.expr([1,2,3]).spliceAt("foo", 2).add("Hello")', async () => {
+        try {
+            r.nextVarId = 1
+            await r.expr( [ 1, 2, 3 ] ).spliceAt( 'foo', 2 ).add( 'Hello' ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Expected type NUMBER but found STRING in:\nr.expr([1, 2, 3]).spliceAt("foo", 2).add("Hello")\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^             \n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 [ { type: 'POS', pos: 0 } ]
 
@@ -1336,17 +1451,18 @@ Expected type NUMBER but found STRING in:
 r.expr([1, 2, 3]).deleteAt("foo", 2).add("Hello")
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 */
-  it('Test backtrace for r.expr([1,2,3]).deleteAt("foo", 2).add("Hello")', async () => {
-    try {
-      r.nextVarId = 1
-      await r.expr([1, 2, 3]).deleteAt('foo', 2).add('Hello').run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Expected type NUMBER but found STRING in:\nr.expr([1, 2, 3]).deleteAt("foo", 2).add("Hello")\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^             \n')
-    }
-  })
+    it( 'Test backtrace for r.expr([1,2,3]).deleteAt("foo", 2).add("Hello")', async () => {
+        try {
+            r.nextVarId = 1
+            await r.expr( [ 1, 2, 3 ] ).deleteAt( 'foo', 2 ).add( 'Hello' ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Expected type NUMBER but found STRING in:\nr.expr([1, 2, 3]).deleteAt("foo", 2).add("Hello")\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^             \n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 [ { type: 'POS', pos: 0 } ]
 
@@ -1355,17 +1471,18 @@ Expected type NUMBER but found STRING in:
 r.expr([1, 2, 3]).changeAt("foo", 2).add("Hello")
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 */
-  it('Test backtrace for r.expr([1,2,3]).changeAt("foo", 2).add("Hello")', async () => {
-    try {
-      r.nextVarId = 1
-      await r.expr([1, 2, 3]).changeAt('foo', 2).add('Hello').run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Expected type NUMBER but found STRING in:\nr.expr([1, 2, 3]).changeAt("foo", 2).add("Hello")\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^             \n')
-    }
-  })
+    it( 'Test backtrace for r.expr([1,2,3]).changeAt("foo", 2).add("Hello")', async () => {
+        try {
+            r.nextVarId = 1
+            await r.expr( [ 1, 2, 3 ] ).changeAt( 'foo', 2 ).add( 'Hello' ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Expected type NUMBER but found STRING in:\nr.expr([1, 2, 3]).changeAt("foo", 2).add("Hello")\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^             \n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 [ 0, 0 ]
 
@@ -1374,17 +1491,18 @@ Cannot call `keys` on objects of type `ARRAY` in:
 r.expr([1, 2, 3]).keys().add("Hello")
 ^^^^^^^^^^^^^^^^^
 */
-  it('Test backtrace for  r.expr([1,2,3]).keys().add("Hello")', async () => {
-    try {
-      r.nextVarId = 1
-      await r.expr([1, 2, 3]).keys().add('Hello').run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Cannot call `keys` on objects of type `ARRAY` in:\nr.expr([1, 2, 3]).keys().add("Hello")\n^^^^^^^^^^^^^^^^^                    \n')
-    }
-  })
+    it( 'Test backtrace for  r.expr([1,2,3]).keys().add("Hello")', async () => {
+        try {
+            r.nextVarId = 1
+            await r.expr( [ 1, 2, 3 ] ).keys().add( 'Hello' ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Cannot call `keys` on objects of type `ARRAY` in:\nr.expr([1, 2, 3]).keys().add("Hello")\n^^^^^^^^^^^^^^^^^                    \n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 [ { type: 'POS', pos: 0 }, { type: 'POS', pos: 0 } ]
 
@@ -1393,17 +1511,18 @@ Expected type STRING but found ARRAY in:
 r.expr([1, 2, 3]).match("foo").add("Hello")
 ^^^^^^^^^^^^^^^^^
 */
-  it('Test backtrace for r.expr([1,2,3]).match("foo").add("Hello")', async () => {
-    try {
-      r.nextVarId = 1
-      await r.expr([1, 2, 3]).match('foo').add('Hello').run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Expected type STRING but found ARRAY in:\nr.expr([1, 2, 3]).match("foo").add("Hello")\n^^^^^^^^^^^^^^^^^                          \n')
-    }
-  })
+    it( 'Test backtrace for r.expr([1,2,3]).match("foo").add("Hello")', async () => {
+        try {
+            r.nextVarId = 1
+            await r.expr( [ 1, 2, 3 ] ).match( 'foo' ).add( 'Hello' ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Expected type STRING but found ARRAY in:\nr.expr([1, 2, 3]).match("foo").add("Hello")\n^^^^^^^^^^^^^^^^^                          \n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 []
 
@@ -1412,17 +1531,18 @@ Expected type ARRAY but found STRING in:
 r.expr([1, 2, 3]).add("Hello")
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 */
-  it('Test backtrace for r.expr([1,2,3]).add("Hello")', async () => {
-    try {
-      r.nextVarId = 1
-      await r.expr([1, 2, 3]).add('Hello').run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Expected type ARRAY but found STRING in:\nr.expr([1, 2, 3]).add("Hello")\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n')
-    }
-  })
+    it( 'Test backtrace for r.expr([1,2,3]).add("Hello")', async () => {
+        try {
+            r.nextVarId = 1
+            await r.expr( [ 1, 2, 3 ] ).add( 'Hello' ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Expected type ARRAY but found STRING in:\nr.expr([1, 2, 3]).add("Hello")\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 []
 
@@ -1431,17 +1551,18 @@ Expected type NUMBER but found ARRAY in:
 r.expr([1, 2, 3]).sub("Hello")
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 */
-  it('Test backtrace for r.expr([1,2,3]).sub("Hello")', async () => {
-    try {
-      r.nextVarId = 1
-      await r.expr([1, 2, 3]).sub('Hello').run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Expected type NUMBER but found ARRAY in:\nr.expr([1, 2, 3]).sub("Hello")\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n')
-    }
-  })
+    it( 'Test backtrace for r.expr([1,2,3]).sub("Hello")', async () => {
+        try {
+            r.nextVarId = 1
+            await r.expr( [ 1, 2, 3 ] ).sub( 'Hello' ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Expected type NUMBER but found ARRAY in:\nr.expr([1, 2, 3]).sub("Hello")\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 []
 
@@ -1450,17 +1571,18 @@ Expected type NUMBER but found STRING in:
 r.expr([1, 2, 3]).mul("Hello")
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 */
-  it('Test backtrace for r.expr([1,2,3]).mul("Hello")', async () => {
-    try {
-      r.nextVarId = 1
-      await r.expr([1, 2, 3]).mul('Hello').run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Expected type NUMBER but found STRING in:\nr.expr([1, 2, 3]).mul("Hello")\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n')
-    }
-  })
+    it( 'Test backtrace for r.expr([1,2,3]).mul("Hello")', async () => {
+        try {
+            r.nextVarId = 1
+            await r.expr( [ 1, 2, 3 ] ).mul( 'Hello' ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Expected type NUMBER but found STRING in:\nr.expr([1, 2, 3]).mul("Hello")\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 []
 
@@ -1469,17 +1591,18 @@ Expected type NUMBER but found ARRAY in:
 r.expr([1, 2, 3]).div("Hello")
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 */
-  it('Test backtrace for r.expr([1,2,3]).div("Hello")', async () => {
-    try {
-      r.nextVarId = 1
-      await r.expr([1, 2, 3]).div('Hello').run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Expected type NUMBER but found ARRAY in:\nr.expr([1, 2, 3]).div("Hello")\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n')
-    }
-  })
+    it( 'Test backtrace for r.expr([1,2,3]).div("Hello")', async () => {
+        try {
+            r.nextVarId = 1
+            await r.expr( [ 1, 2, 3 ] ).div( 'Hello' ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Expected type NUMBER but found ARRAY in:\nr.expr([1, 2, 3]).div("Hello")\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 [ { type: 'POS', pos: 0 } ]
 
@@ -1488,17 +1611,18 @@ Expected type NUMBER but found ARRAY in:
 r.expr([1, 2, 3]).mod("Hello")
 ^^^^^^^^^^^^^^^^^
 */
-  it('Test backtrace for r.expr([1,2,3]).mod("Hello")', async () => {
-    try {
-      r.nextVarId = 1
-      await r.expr([1, 2, 3]).mod('Hello').run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Expected type NUMBER but found ARRAY in:\nr.expr([1, 2, 3]).mod("Hello")\n^^^^^^^^^^^^^^^^^             \n')
-    }
-  })
+    it( 'Test backtrace for r.expr([1,2,3]).mod("Hello")', async () => {
+        try {
+            r.nextVarId = 1
+            await r.expr( [ 1, 2, 3 ] ).mod( 'Hello' ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Expected type NUMBER but found ARRAY in:\nr.expr([1, 2, 3]).mod("Hello")\n^^^^^^^^^^^^^^^^^             \n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 [ { type: 'POS', pos: 1 } ]
 
@@ -1507,17 +1631,18 @@ Expected type STRING but found NUMBER in:
 r.expr([1, 2, 3]).and(r.expr("Hello").add(2))
             ^^^^^^^^^^^^^^^^^^^^^^
 */
-  it('Test backtrace for r.expr([1,2,3]).and(r.expr("Hello").add(2))', async () => {
-    try {
-      r.nextVarId = 1
-      await r.expr([1, 2, 3]).and(r.expr('Hello').add(2)).run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Expected type STRING but found NUMBER in:\nr.expr([1, 2, 3]).and(r.expr("Hello").add(2))\n                      ^^^^^^^^^^^^^^^^^^^^^^ \n')
-    }
-  })
+    it( 'Test backtrace for r.expr([1,2,3]).and(r.expr("Hello").add(2))', async () => {
+        try {
+            r.nextVarId = 1
+            await r.expr( [ 1, 2, 3 ] ).and( r.expr( 'Hello' ).add( 2 ) ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Expected type STRING but found NUMBER in:\nr.expr([1, 2, 3]).and(r.expr("Hello").add(2))\n                      ^^^^^^^^^^^^^^^^^^^^^^ \n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 [ { type: 'POS', pos: 1 } ]
 
@@ -1526,17 +1651,18 @@ Expected type STRING but found NUMBER in:
 r.expr(false).or(r.expr("Hello").add(2))
          ^^^^^^^^^^^^^^^^^^^^^^
 */
-  it('Test backtrace for r.expr(false).or(r.expr("Hello").add(2))', async () => {
-    try {
-      r.nextVarId = 1
-      await r.expr(false).or(r.expr('Hello').add(2)).run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Expected type STRING but found NUMBER in:\nr.expr(false).or(r.expr("Hello").add(2))\n                 ^^^^^^^^^^^^^^^^^^^^^^ \n')
-    }
-  })
+    it( 'Test backtrace for r.expr(false).or(r.expr("Hello").add(2))', async () => {
+        try {
+            r.nextVarId = 1
+            await r.expr( false ).or( r.expr( 'Hello' ).add( 2 ) ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Expected type STRING but found NUMBER in:\nr.expr(false).or(r.expr("Hello").add(2))\n                 ^^^^^^^^^^^^^^^^^^^^^^ \n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 [ { type: 'POS', pos: 1 } ]
 
@@ -1545,17 +1671,18 @@ Expected type STRING but found NUMBER in:
 r.expr([1, 2, 3]).eq(r.expr("Hello").add(2))
            ^^^^^^^^^^^^^^^^^^^^^^
 */
-  it('Test backtrace for r.expr([1,2,3]).eq(r.expr("Hello").add(2))', async () => {
-    try {
-      r.nextVarId = 1
-      await r.expr([1, 2, 3]).eq(r.expr('Hello').add(2)).run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Expected type STRING but found NUMBER in:\nr.expr([1, 2, 3]).eq(r.expr("Hello").add(2))\n                     ^^^^^^^^^^^^^^^^^^^^^^ \n')
-    }
-  })
+    it( 'Test backtrace for r.expr([1,2,3]).eq(r.expr("Hello").add(2))', async () => {
+        try {
+            r.nextVarId = 1
+            await r.expr( [ 1, 2, 3 ] ).eq( r.expr( 'Hello' ).add( 2 ) ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Expected type STRING but found NUMBER in:\nr.expr([1, 2, 3]).eq(r.expr("Hello").add(2))\n                     ^^^^^^^^^^^^^^^^^^^^^^ \n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 [ { type: 'POS', pos: 1 } ]
 
@@ -1564,17 +1691,18 @@ Expected type STRING but found NUMBER in:
 r.expr([1, 2, 3]).ne(r.expr("Hello").add(2))
            ^^^^^^^^^^^^^^^^^^^^^^
 */
-  it('Test backtrace for r.expr([1,2,3]).ne(r.expr("Hello").add(2))', async () => {
-    try {
-      r.nextVarId = 1
-      await r.expr([1, 2, 3]).ne(r.expr('Hello').add(2)).run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Expected type STRING but found NUMBER in:\nr.expr([1, 2, 3]).ne(r.expr("Hello").add(2))\n                     ^^^^^^^^^^^^^^^^^^^^^^ \n')
-    }
-  })
+    it( 'Test backtrace for r.expr([1,2,3]).ne(r.expr("Hello").add(2))', async () => {
+        try {
+            r.nextVarId = 1
+            await r.expr( [ 1, 2, 3 ] ).ne( r.expr( 'Hello' ).add( 2 ) ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Expected type STRING but found NUMBER in:\nr.expr([1, 2, 3]).ne(r.expr("Hello").add(2))\n                     ^^^^^^^^^^^^^^^^^^^^^^ \n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 [ { type: 'POS', pos: 1 } ]
 
@@ -1583,17 +1711,18 @@ Expected type STRING but found NUMBER in:
 r.expr([1, 2, 3]).gt(r.expr("Hello").add(2))
            ^^^^^^^^^^^^^^^^^^^^^^
 */
-  it('Test backtrace for r.expr([1,2,3]).gt(r.expr("Hello").add(2))', async () => {
-    try {
-      r.nextVarId = 1
-      await r.expr([1, 2, 3]).gt(r.expr('Hello').add(2)).run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Expected type STRING but found NUMBER in:\nr.expr([1, 2, 3]).gt(r.expr("Hello").add(2))\n                     ^^^^^^^^^^^^^^^^^^^^^^ \n')
-    }
-  })
+    it( 'Test backtrace for r.expr([1,2,3]).gt(r.expr("Hello").add(2))', async () => {
+        try {
+            r.nextVarId = 1
+            await r.expr( [ 1, 2, 3 ] ).gt( r.expr( 'Hello' ).add( 2 ) ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Expected type STRING but found NUMBER in:\nr.expr([1, 2, 3]).gt(r.expr("Hello").add(2))\n                     ^^^^^^^^^^^^^^^^^^^^^^ \n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 [ { type: 'POS', pos: 1 } ]
 
@@ -1602,17 +1731,18 @@ Expected type STRING but found NUMBER in:
 r.expr([1, 2, 3]).lt(r.expr("Hello").add(2))
            ^^^^^^^^^^^^^^^^^^^^^^
 */
-  it('Test backtrace for r.expr([1,2,3]).lt(r.expr("Hello").add(2))', async () => {
-    try {
-      r.nextVarId = 1
-      await r.expr([1, 2, 3]).lt(r.expr('Hello').add(2)).run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Expected type STRING but found NUMBER in:\nr.expr([1, 2, 3]).lt(r.expr("Hello").add(2))\n                     ^^^^^^^^^^^^^^^^^^^^^^ \n')
-    }
-  })
+    it( 'Test backtrace for r.expr([1,2,3]).lt(r.expr("Hello").add(2))', async () => {
+        try {
+            r.nextVarId = 1
+            await r.expr( [ 1, 2, 3 ] ).lt( r.expr( 'Hello' ).add( 2 ) ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Expected type STRING but found NUMBER in:\nr.expr([1, 2, 3]).lt(r.expr("Hello").add(2))\n                     ^^^^^^^^^^^^^^^^^^^^^^ \n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 [ { type: 'POS', pos: 1 } ]
 
@@ -1621,17 +1751,18 @@ Expected type STRING but found NUMBER in:
 r.expr([1, 2, 3]).le(r.expr("Hello").add(2))
            ^^^^^^^^^^^^^^^^^^^^^^
 */
-  it('Test backtrace for r.expr([1,2,3]).le(r.expr("Hello").add(2))', async () => {
-    try {
-      r.nextVarId = 1
-      await r.expr([1, 2, 3]).le(r.expr('Hello').add(2)).run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Expected type STRING but found NUMBER in:\nr.expr([1, 2, 3]).le(r.expr("Hello").add(2))\n                     ^^^^^^^^^^^^^^^^^^^^^^ \n')
-    }
-  })
+    it( 'Test backtrace for r.expr([1,2,3]).le(r.expr("Hello").add(2))', async () => {
+        try {
+            r.nextVarId = 1
+            await r.expr( [ 1, 2, 3 ] ).le( r.expr( 'Hello' ).add( 2 ) ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Expected type STRING but found NUMBER in:\nr.expr([1, 2, 3]).le(r.expr("Hello").add(2))\n                     ^^^^^^^^^^^^^^^^^^^^^^ \n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 [ { type: 'POS', pos: 1 } ]
 
@@ -1640,17 +1771,18 @@ Expected type STRING but found NUMBER in:
 r.expr([1, 2, 3]).ge(r.expr("Hello").add(2))
            ^^^^^^^^^^^^^^^^^^^^^^
 */
-  it('Test backtrace for r.expr([1,2,3]).ge(r.expr("Hello").add(2))', async () => {
-    try {
-      r.nextVarId = 1
-      await r.expr([1, 2, 3]).ge(r.expr('Hello').add(2)).run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Expected type STRING but found NUMBER in:\nr.expr([1, 2, 3]).ge(r.expr("Hello").add(2))\n                     ^^^^^^^^^^^^^^^^^^^^^^ \n')
-    }
-  })
+    it( 'Test backtrace for r.expr([1,2,3]).ge(r.expr("Hello").add(2))', async () => {
+        try {
+            r.nextVarId = 1
+            await r.expr( [ 1, 2, 3 ] ).ge( r.expr( 'Hello' ).add( 2 ) ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Expected type STRING but found NUMBER in:\nr.expr([1, 2, 3]).ge(r.expr("Hello").add(2))\n                     ^^^^^^^^^^^^^^^^^^^^^^ \n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 [ { type: 'POS', pos: 1 } ]
 
@@ -1659,17 +1791,18 @@ Expected type STRING but found NUMBER in:
 r.expr([1, 2, 3]).not().add(r.expr("Hello").add(2))
               ^^^^^^^^^^^^^^^^^^^^^^
 */
-  it('Test backtrace for r.expr([1,2,3]).not().add(r.expr("Hello").add(2))', async () => {
-    try {
-      r.nextVarId = 1
-      await r.expr([1, 2, 3]).not().add(r.expr('Hello').add(2)).run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Expected type STRING but found NUMBER in:\nr.expr([1, 2, 3]).not().add(r.expr("Hello").add(2))\n                            ^^^^^^^^^^^^^^^^^^^^^^ \n')
-    }
-  })
+    it( 'Test backtrace for r.expr([1,2,3]).not().add(r.expr("Hello").add(2))', async () => {
+        try {
+            r.nextVarId = 1
+            await r.expr( [ 1, 2, 3 ] ).not().add( r.expr( 'Hello' ).add( 2 ) ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Expected type STRING but found NUMBER in:\nr.expr([1, 2, 3]).not().add(r.expr("Hello").add(2))\n                            ^^^^^^^^^^^^^^^^^^^^^^ \n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 []
 
@@ -1678,17 +1811,18 @@ Expected type NUMBER but found STRING in:
 r.now().add("Hello")
 ^^^^^^^^^^^^^^^^^^^^
 */
-  it('Test backtrace for r.now().add("Hello")', async () => {
-    try {
-      r.nextVarId = 1
-      await r.now().add('Hello').run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Expected type NUMBER but found STRING in:\nr.now().add("Hello")\n^^^^^^^^^^^^^^^^^^^^\n')
-    }
-  })
+    it( 'Test backtrace for r.now().add("Hello")', async () => {
+        try {
+            r.nextVarId = 1
+            await r.now().add( 'Hello' ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Expected type NUMBER but found STRING in:\nr.now().add("Hello")\n^^^^^^^^^^^^^^^^^^^^\n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 [ { type: 'POS', pos: 0 } ]
 
@@ -1697,17 +1831,18 @@ Error in time logic: Year is out of valid range: 1400..10000 in:
 r.time(1023, 11, 3, "Z").add("Hello")
 ^^^^^^^^^^^^^^^^^^^^^^^^
 */
-  it('Test backtrace for r.time(1023, 11, 3, "Z").add("Hello")', async () => {
-    try {
-      r.nextVarId = 1
-      await r.time(1023, 11, 3, 'Z').add('Hello').run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Error in time logic: Year is out of valid range: 1400..10000 in:\nr.time(1023, 11, 3, "Z").add("Hello")\n^^^^^^^^^^^^^^^^^^^^^^^^             \n')
-    }
-  })
+    it( 'Test backtrace for r.time(1023, 11, 3, "Z").add("Hello")', async () => {
+        try {
+            r.nextVarId = 1
+            await r.time( 1023, 11, 3, 'Z' ).add( 'Hello' ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Error in time logic: Year is out of valid range: 1400..10000 in:\nr.time(1023, 11, 3, "Z").add("Hello")\n^^^^^^^^^^^^^^^^^^^^^^^^             \n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 []
 
@@ -1716,17 +1851,18 @@ Expected type NUMBER but found STRING in:
 r.epochTime(12132131).add("Hello")
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 */
-  it('Test backtrace for r.epochTime(12132131).add("Hello")', async () => {
-    try {
-      r.nextVarId = 1
-      await r.epochTime(12132131).add('Hello').run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Expected type NUMBER but found STRING in:\nr.epochTime(12132131).add("Hello")\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n')
-    }
-  })
+    it( 'Test backtrace for r.epochTime(12132131).add("Hello")', async () => {
+        try {
+            r.nextVarId = 1
+            await r.epochTime( 12132131 ).add( 'Hello' ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Expected type NUMBER but found STRING in:\nr.epochTime(12132131).add("Hello")\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 [ { type: 'POS', pos: 0 }, { type: 'POS', pos: 0 } ]
 
@@ -1735,17 +1871,18 @@ Invalid date string `UnvalidISO961String` (got `U` but expected a digit) in:
 r.ISO8601("UnvalidISO961String").add("Hello")
       ^^^^^^^^^^^^^^^^^^^^^
 */
-  it('Test backtrace for r.ISO8601("UnvalidISO961String").add("Hello")', async () => {
-    try {
-      r.nextVarId = 1
-      await r.ISO8601('UnvalidISO961String').add('Hello').run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Invalid date string `UnvalidISO961String` (got `U` but expected a digit) in:\nr.ISO8601("UnvalidISO961String").add("Hello")\n          ^^^^^^^^^^^^^^^^^^^^^              \n')
-    }
-  })
+    it( 'Test backtrace for r.ISO8601("UnvalidISO961String").add("Hello")', async () => {
+        try {
+            r.nextVarId = 1
+            await r.ISO8601( 'UnvalidISO961String' ).add( 'Hello' ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Invalid date string `UnvalidISO961String` (got `U` but expected a digit) in:\nr.ISO8601("UnvalidISO961String").add("Hello")\n          ^^^^^^^^^^^^^^^^^^^^^              \n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 [ { type: 'POS', pos: 0 } ]
 
@@ -1754,17 +1891,18 @@ Timezone `noTimezone` does not start with `-` or `+` in:
 r.now().inTimezone("noTimezone").add("Hello")
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 */
-  it('Test backtrace for r.now().inTimezone("noTimezone").add("Hello")', async () => {
-    try {
-      r.nextVarId = 1
-      await r.now().inTimezone('noTimezone').add('Hello').run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Timezone `noTimezone` does not start with `-` or `+` in:\nr.now().inTimezone("noTimezone").add("Hello")\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^             \n')
-    }
-  })
+    it( 'Test backtrace for r.now().inTimezone("noTimezone").add("Hello")', async () => {
+        try {
+            r.nextVarId = 1
+            await r.now().inTimezone( 'noTimezone' ).add( 'Hello' ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Timezone `noTimezone` does not start with `-` or `+` in:\nr.now().inTimezone("noTimezone").add("Hello")\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^             \n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 []
 
@@ -1773,17 +1911,18 @@ Expected type STRING but found BOOL in:
 r.now().timezone().add(true)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 */
-  it('Test backtrace for r.now().timezone().add(true)', async () => {
-    try {
-      r.nextVarId = 1
-      await r.now().timezone().add(true).run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Expected type STRING but found BOOL in:\nr.now().timezone().add(true)\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n')
-    }
-  })
+    it( 'Test backtrace for r.now().timezone().add(true)', async () => {
+        try {
+            r.nextVarId = 1
+            await r.now().timezone().add( true ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Expected type STRING but found BOOL in:\nr.now().timezone().add(true)\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 []
 
@@ -1792,17 +1931,18 @@ Expected type NUMBER but found BOOL in:
 r.now().during(r.now(), r.now()).add(true)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 */
-  it('Test backtrace for r.now().during(r.now(), r.now()).add(true)', async () => {
-    try {
-      r.nextVarId = 1
-      await r.now().during(r.now(), r.now()).add(true).run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Expected type NUMBER but found BOOL in:\nr.now().during(r.now(), r.now()).add(true)\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n')
-    }
-  })
+    it( 'Test backtrace for r.now().during(r.now(), r.now()).add(true)', async () => {
+        try {
+            r.nextVarId = 1
+            await r.now().during( r.now(), r.now() ).add( true ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Expected type NUMBER but found BOOL in:\nr.now().during(r.now(), r.now()).add(true)\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 []
 
@@ -1811,17 +1951,18 @@ Expected type NUMBER but found BOOL in:
 r.now().timeOfDay().add(true)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 */
-  it('Test backtrace for r.now().timeOfDay().add(true)', async () => {
-    try {
-      r.nextVarId = 1
-      await r.now().timeOfDay().add(true).run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Expected type NUMBER but found BOOL in:\nr.now().timeOfDay().add(true)\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n')
-    }
-  })
+    it( 'Test backtrace for r.now().timeOfDay().add(true)', async () => {
+        try {
+            r.nextVarId = 1
+            await r.now().timeOfDay().add( true ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Expected type NUMBER but found BOOL in:\nr.now().timeOfDay().add(true)\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 []
 
@@ -1830,17 +1971,18 @@ Expected type NUMBER but found BOOL in:
 r.now().year().add(true)
 ^^^^^^^^^^^^^^^^^^^^^^^^
 */
-  it('Test backtrace for r.now().year().add(true)', async () => {
-    try {
-      r.nextVarId = 1
-      await r.now().year().add(true).run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Expected type NUMBER but found BOOL in:\nr.now().year().add(true)\n^^^^^^^^^^^^^^^^^^^^^^^^\n')
-    }
-  })
+    it( 'Test backtrace for r.now().year().add(true)', async () => {
+        try {
+            r.nextVarId = 1
+            await r.now().year().add( true ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Expected type NUMBER but found BOOL in:\nr.now().year().add(true)\n^^^^^^^^^^^^^^^^^^^^^^^^\n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 []
 
@@ -1849,17 +1991,18 @@ Expected type NUMBER but found BOOL in:
 r.now().month().add(true)
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 */
-  it('Test backtrace for r.now().month().add(true)', async () => {
-    try {
-      r.nextVarId = 1
-      await r.now().month().add(true).run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Expected type NUMBER but found BOOL in:\nr.now().month().add(true)\n^^^^^^^^^^^^^^^^^^^^^^^^^\n')
-    }
-  })
+    it( 'Test backtrace for r.now().month().add(true)', async () => {
+        try {
+            r.nextVarId = 1
+            await r.now().month().add( true ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Expected type NUMBER but found BOOL in:\nr.now().month().add(true)\n^^^^^^^^^^^^^^^^^^^^^^^^^\n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 []
 
@@ -1868,17 +2011,18 @@ Expected type NUMBER but found BOOL in:
 r.now().day().add(true)
 ^^^^^^^^^^^^^^^^^^^^^^^
 */
-  it('Test backtrace for r.now().day().add(true)', async () => {
-    try {
-      r.nextVarId = 1
-      await r.now().day().add(true).run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Expected type NUMBER but found BOOL in:\nr.now().day().add(true)\n^^^^^^^^^^^^^^^^^^^^^^^\n')
-    }
-  })
+    it( 'Test backtrace for r.now().day().add(true)', async () => {
+        try {
+            r.nextVarId = 1
+            await r.now().day().add( true ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Expected type NUMBER but found BOOL in:\nr.now().day().add(true)\n^^^^^^^^^^^^^^^^^^^^^^^\n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 []
 
@@ -1887,17 +2031,18 @@ Expected type NUMBER but found BOOL in:
 r.now().dayOfWeek().add(true)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 */
-  it('Test backtrace for r.now().dayOfWeek().add(true)', async () => {
-    try {
-      r.nextVarId = 1
-      await r.now().dayOfWeek().add(true).run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Expected type NUMBER but found BOOL in:\nr.now().dayOfWeek().add(true)\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n')
-    }
-  })
+    it( 'Test backtrace for r.now().dayOfWeek().add(true)', async () => {
+        try {
+            r.nextVarId = 1
+            await r.now().dayOfWeek().add( true ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Expected type NUMBER but found BOOL in:\nr.now().dayOfWeek().add(true)\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 []
 
@@ -1906,17 +2051,18 @@ Expected type NUMBER but found BOOL in:
 r.now().dayOfYear().add(true)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 */
-  it('Test backtrace for r.now().dayOfYear().add(true)', async () => {
-    try {
-      r.nextVarId = 1
-      await r.now().dayOfYear().add(true).run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Expected type NUMBER but found BOOL in:\nr.now().dayOfYear().add(true)\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n')
-    }
-  })
+    it( 'Test backtrace for r.now().dayOfYear().add(true)', async () => {
+        try {
+            r.nextVarId = 1
+            await r.now().dayOfYear().add( true ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Expected type NUMBER but found BOOL in:\nr.now().dayOfYear().add(true)\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 []
 
@@ -1925,17 +2071,18 @@ Expected type NUMBER but found BOOL in:
 r.now().hours().add(true)
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 */
-  it('Test backtrace for r.now().hours().add(true)', async () => {
-    try {
-      r.nextVarId = 1
-      await r.now().hours().add(true).run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Expected type NUMBER but found BOOL in:\nr.now().hours().add(true)\n^^^^^^^^^^^^^^^^^^^^^^^^^\n')
-    }
-  })
+    it( 'Test backtrace for r.now().hours().add(true)', async () => {
+        try {
+            r.nextVarId = 1
+            await r.now().hours().add( true ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Expected type NUMBER but found BOOL in:\nr.now().hours().add(true)\n^^^^^^^^^^^^^^^^^^^^^^^^^\n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 []
 
@@ -1944,17 +2091,18 @@ Expected type NUMBER but found BOOL in:
 r.now().minutes().add(true)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 */
-  it('Test backtrace for r.now().minutes().add(true)', async () => {
-    try {
-      r.nextVarId = 1
-      await r.now().minutes().add(true).run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Expected type NUMBER but found BOOL in:\nr.now().minutes().add(true)\n^^^^^^^^^^^^^^^^^^^^^^^^^^^\n')
-    }
-  })
+    it( 'Test backtrace for r.now().minutes().add(true)', async () => {
+        try {
+            r.nextVarId = 1
+            await r.now().minutes().add( true ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Expected type NUMBER but found BOOL in:\nr.now().minutes().add(true)\n^^^^^^^^^^^^^^^^^^^^^^^^^^^\n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 []
 
@@ -1963,17 +2111,18 @@ Expected type NUMBER but found BOOL in:
 r.now().seconds().add(true)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 */
-  it('Test backtrace for r.now().seconds().add(true)', async () => {
-    try {
-      r.nextVarId = 1
-      await r.now().seconds().add(true).run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Expected type NUMBER but found BOOL in:\nr.now().seconds().add(true)\n^^^^^^^^^^^^^^^^^^^^^^^^^^^\n')
-    }
-  })
+    it( 'Test backtrace for r.now().seconds().add(true)', async () => {
+        try {
+            r.nextVarId = 1
+            await r.now().seconds().add( true ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Expected type NUMBER but found BOOL in:\nr.now().seconds().add(true)\n^^^^^^^^^^^^^^^^^^^^^^^^^^^\n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 []
 
@@ -1982,17 +2131,18 @@ Expected type STRING but found BOOL in:
 r.now().toISO8601().add(true)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 */
-  it('Test backtrace for r.now().toISO8601().add(true)', async () => {
-    try {
-      r.nextVarId = 1
-      await r.now().toISO8601().add(true).run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Expected type STRING but found BOOL in:\nr.now().toISO8601().add(true)\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n')
-    }
-  })
+    it( 'Test backtrace for r.now().toISO8601().add(true)', async () => {
+        try {
+            r.nextVarId = 1
+            await r.now().toISO8601().add( true ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Expected type STRING but found BOOL in:\nr.now().toISO8601().add(true)\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 []
 
@@ -2001,17 +2151,18 @@ Expected type NUMBER but found BOOL in:
 r.now().toEpochTime().add(true)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 */
-  it('Test backtrace for r.now().toEpochTime().add(true)', async () => {
-    try {
-      r.nextVarId = 1
-      await r.now().toEpochTime().add(true).run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Expected type NUMBER but found BOOL in:\nr.now().toEpochTime().add(true)\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n')
-    }
-  })
+    it( 'Test backtrace for r.now().toEpochTime().add(true)', async () => {
+        try {
+            r.nextVarId = 1
+            await r.now().toEpochTime().add( true ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Expected type NUMBER but found BOOL in:\nr.now().toEpochTime().add(true)\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 [ 0, 1, 0, 0 ]
 
@@ -2022,18 +2173,21 @@ r.expr(1).do(function(var_1) {
        ^^^^^
 })
 */
-  it('Test backtrace for r.expr(1).do(function(var_1) { return var_1("bah").add(3) }) ', async () => {
-    try {
-      r.nextVarId = 1
+    it( 'Test backtrace for r.expr(1).do(function(var_1) { return var_1("bah").add(3) }) ', async () => {
+        try {
+            r.nextVarId = 1
 
-      await r.expr(1).do(function (var_1) { return var_1('bah').add(3) }).run() // eslint-disable-line camelcase
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Cannot perform bracket on a non-object non-sequence `1` in:\nr.expr(1).do(function(var_1) {\n    return var_1("bah").add(3)\n           ^^^^^              \n})\n')
-    }
-  })
+            await r.expr( 1 ).do( function( var_1 ) {
+                return var_1( 'bah' ).add( 3 )
+            } ).run() // eslint-disable-line camelcase
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Cannot perform bracket on a non-object non-sequence `1` in:\nr.expr(1).do(function(var_1) {\n    return var_1("bah").add(3)\n           ^^^^^              \n})\n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 [ 0 ]
 
@@ -2042,17 +2196,18 @@ Expected type NUMBER but found STRING in:
 r.branch(r.expr(1).add("hello"), "Hello", "World")
      ^^^^^^^^^^^^^^^^^^^^^^
 */
-  it('Test backtrace for r.branch(r.expr(1).add("hello"), "Hello", "World")', async () => {
-    try {
-      r.nextVarId = 1
-      await r.branch(r.expr(1).add('hello'), 'Hello', 'World').run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Expected type NUMBER but found STRING in:\nr.branch(r.expr(1).add("hello"), "Hello", "World")\n         ^^^^^^^^^^^^^^^^^^^^^^                   \n')
-    }
-  })
+    it( 'Test backtrace for r.branch(r.expr(1).add("hello"), "Hello", "World")', async () => {
+        try {
+            r.nextVarId = 1
+            await r.branch( r.expr( 1 ).add( 'hello' ), 'Hello', 'World' ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Expected type NUMBER but found STRING in:\nr.branch(r.expr(1).add("hello"), "Hello", "World")\n         ^^^^^^^^^^^^^^^^^^^^^^                   \n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 []
 
@@ -2065,17 +2220,20 @@ r.expr(1).forEach(function(var_1) {
 })
 ^^
 */
-  it('Test backtrace for r.expr(1).forEach(function(foo) { return foo("bar") })', async () => {
-    try {
-      r.nextVarId = 1
-      await r.expr(1).forEach(function (foo) { return foo('bar') }).run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Cannot convert NUMBER to SEQUENCE in:\nr.expr(1).forEach(function(var_1) {\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    return var_1("bar")\n    ^^^^^^^^^^^^^^^^^^^\n})\n^^\n')
-    }
-  })
+    it( 'Test backtrace for r.expr(1).forEach(function(foo) { return foo("bar") })', async () => {
+        try {
+            r.nextVarId = 1
+            await r.expr( 1 ).forEach( function( foo ) {
+                return foo( 'bar' )
+            } ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Cannot convert NUMBER to SEQUENCE in:\nr.expr(1).forEach(function(var_1) {\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    return var_1("bar")\n    ^^^^^^^^^^^^^^^^^^^\n})\n^^\n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 []
 
@@ -2084,17 +2242,18 @@ foo in:
 r.error("foo")
 ^^^^^^^^^^^^^^
 */
-  it('Test backtrace for r.error("foo")', async () => {
-    try {
-      r.nextVarId = 1
-      await r.error('foo').run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'foo in:\nr.error("foo")\n^^^^^^^^^^^^^^\n')
-    }
-  })
+    it( 'Test backtrace for r.error("foo")', async () => {
+        try {
+            r.nextVarId = 1
+            await r.error( 'foo' ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'foo in:\nr.error("foo")\n^^^^^^^^^^^^^^\n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 []
 
@@ -2107,17 +2266,20 @@ r.expr({
 })("b").default("bar").add(2)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 */
-  it('Test backtrace for r.expr({a:1})("b").default("bar").add(2)', async () => {
-    try {
-      r.nextVarId = 1
-      await r.expr({a: 1})('b').default('bar').add(2).run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Expected type STRING but found NUMBER in:\nr.expr({\n^^^^^^^^\n    a: 1\n    ^^^^\n})("b").default("bar").add(2)\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n')
-    }
-  })
+    it( 'Test backtrace for r.expr({a:1})("b").default("bar").add(2)', async () => {
+        try {
+            r.nextVarId = 1
+            await r.expr( {
+                a: 1
+            } )( 'b' ).default( 'bar' ).add( 2 ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Expected type STRING but found NUMBER in:\nr.expr({\n^^^^^^^^\n    a: 1\n    ^^^^\n})("b").default("bar").add(2)\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 []
 
@@ -2130,17 +2292,20 @@ r.expr({
 }).add(2)
 ^^^^^^^^^
 */
-  it('Test backtrace for r.expr({a:1}).add(2)', async () => {
-    try {
-      r.nextVarId = 1
-      await r.expr({a: 1}).add(2).run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Expected type NUMBER but found OBJECT in:\nr.expr({\n^^^^^^^^\n    a: 1\n    ^^^^\n}).add(2)\n^^^^^^^^^\n')
-    }
-  })
+    it( 'Test backtrace for r.expr({a:1}).add(2)', async () => {
+        try {
+            r.nextVarId = 1
+            await r.expr( {
+                a: 1
+            } ).add( 2 ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Expected type NUMBER but found OBJECT in:\nr.expr({\n^^^^^^^^\n    a: 1\n    ^^^^\n}).add(2)\n^^^^^^^^^\n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 []
 
@@ -2153,17 +2318,20 @@ r.expr({
 }).add(r.js("2"))
 ^^^^^^^^^^^^^^^^^
 */
-  it('Test backtrace for r.expr({a:1}).add(r.js("2"))', async () => {
-    try {
-      r.nextVarId = 1
-      await r.expr({a: 1}).add(r.js('2')).run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Expected type NUMBER but found OBJECT in:\nr.expr({\n^^^^^^^^\n    a: 1\n    ^^^^\n}).add(r.js("2"))\n^^^^^^^^^^^^^^^^^\n')
-    }
-  })
+    it( 'Test backtrace for r.expr({a:1}).add(r.js("2"))', async () => {
+        try {
+            r.nextVarId = 1
+            await r.expr( {
+                a: 1
+            } ).add( r.js( '2' ) ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Expected type NUMBER but found OBJECT in:\nr.expr({\n^^^^^^^^\n    a: 1\n    ^^^^\n}).add(r.js("2"))\n^^^^^^^^^^^^^^^^^\n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 [ { type: 'POS', pos: 0 } ]
 
@@ -2172,17 +2340,18 @@ Cannot coerce NUMBER to ARRAY in:
 r.expr(2).coerceTo("ARRAY")
 ^^^^^^^^^
 */
-  it('Test backtrace for r.expr(2).coerceTo("ARRAY")', async () => {
-    try {
-      r.nextVarId = 1
-      await r.expr(2).coerceTo('ARRAY').run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Cannot coerce NUMBER to ARRAY in:\nr.expr(2).coerceTo("ARRAY")\n^^^^^^^^^                  \n')
-    }
-  })
+    it( 'Test backtrace for r.expr(2).coerceTo("ARRAY")', async () => {
+        try {
+            r.nextVarId = 1
+            await r.expr( 2 ).coerceTo( 'ARRAY' ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Cannot coerce NUMBER to ARRAY in:\nr.expr(2).coerceTo("ARRAY")\n^^^^^^^^^                  \n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 [ { type: 'POS', pos: 0 } ]
 
@@ -2191,17 +2360,18 @@ Expected type NUMBER but found STRING in:
 r.expr(2).add("foo").typeOf()
 ^^^^^^^^^^^^^^^^^^^^
 */
-  it('Test backtrace for r.expr(2).add("foo").typeOf()', async () => {
-    try {
-      r.nextVarId = 1
-      await r.expr(2).add('foo').typeOf().run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Expected type NUMBER but found STRING in:\nr.expr(2).add("foo").typeOf()\n^^^^^^^^^^^^^^^^^^^^         \n')
-    }
-  })
+    it( 'Test backtrace for r.expr(2).add("foo").typeOf()', async () => {
+        try {
+            r.nextVarId = 1
+            await r.expr( 2 ).add( 'foo' ).typeOf().run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Expected type NUMBER but found STRING in:\nr.expr(2).add("foo").typeOf()\n^^^^^^^^^^^^^^^^^^^^         \n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 [ { type: 'POS', pos: 0 } ]
 
@@ -2210,17 +2380,18 @@ Expected type NUMBER but found STRING in:
 r.expr(2).add("foo").info()
 ^^^^^^^^^^^^^^^^^^^^
 */
-  it('Test backtrace for r.expr(2).add("foo").info()', async () => {
-    try {
-      r.nextVarId = 1
-      await r.expr(2).add('foo').info().run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Expected type NUMBER but found STRING in:\nr.expr(2).add("foo").info()\n^^^^^^^^^^^^^^^^^^^^       \n')
-    }
-  })
+    it( 'Test backtrace for r.expr(2).add("foo").info()', async () => {
+        try {
+            r.nextVarId = 1
+            await r.expr( 2 ).add( 'foo' ).info().run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Expected type NUMBER but found STRING in:\nr.expr(2).add("foo").info()\n^^^^^^^^^^^^^^^^^^^^       \n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 [ 1 ]
 
@@ -2229,17 +2400,18 @@ Failed to parse "foo" as JSON: Invalid value in:
 r.expr(2).add(r.json("foo"))
               ^^^^^^^^^^^^^
 */
-  it('Test backtrace for r.expr(2).add(r.json("foo"))', async () => {
-    try {
-      r.nextVarId = 1
-      await r.expr(2).add(r.json('foo')).run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Failed to parse "foo" as JSON: Invalid value in:\nr.expr(2).add(r.json("foo"))\n              ^^^^^^^^^^^^^ \n')
-    }
-  })
+    it( 'Test backtrace for r.expr(2).add(r.json("foo"))', async () => {
+        try {
+            r.nextVarId = 1
+            await r.expr( 2 ).add( r.json( 'foo' ) ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Failed to parse "foo" as JSON: Invalid value in:\nr.expr(2).add(r.json("foo"))\n              ^^^^^^^^^^^^^ \n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 undefined
 
@@ -2248,17 +2420,22 @@ Unrecognized option `nonValid` in `replace` after:
 r.db("791087f7a75b40ba6a89f96cafefa643").table("da63855c1650bdd5e653662750771333")
 Available options are returnChanges <bool>, durability <string>, nonAtomic <bool>
 */
-  it('Test backtrace for r.db(dbName).table(tableName).replace({a:1}, {nonValid:true})', async () => {
-    try {
-      r.nextVarId = 1
-      await r.db(dbName).table(tableName).replace({a: 1}, {nonValid: true}).run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Unrecognized option `nonValid` in `replace` after:\nr.db("' + dbName + '").table("' + tableName + '")\nAvailable options are returnChanges <bool>, durability <string>, nonAtomic <bool>')
-    }
-  })
+    it( 'Test backtrace for r.db(dbName).table(tableName).replace({a:1}, {nonValid:true})', async () => {
+        try {
+            r.nextVarId = 1
+            await r.db( dbName ).table( tableName ).replace( {
+                a: 1
+            }, {
+                nonValid: true
+            } ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Unrecognized option `nonValid` in `replace` after:\nr.db("' + dbName + '").table("' + tableName + '")\nAvailable options are returnChanges <bool>, durability <string>, nonAtomic <bool>' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 []
 
@@ -2278,17 +2455,22 @@ r.db("0fbd7374d30a23284bc64625f9b6838a").table("5429869da70a92a5e495ed4989e40e30
   })
   ^
 */
-  it('Test backtrace for r.db(dbName).table(tableName).replace({a:1}, {durability: "softt"})', async () => {
-    try {
-      r.nextVarId = 1
-      await r.db(dbName).table(tableName).replace({a: 1}, {durability: 'softt'}).run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Durability option `softt` unrecognized (options are "hard" and "soft") in:\nr.db("' + dbName + '").table("' + tableName + '")\n    .replace({\n        a: 1\n    }, {\n       ^\n        durability: "softt"\n        ^^^^^^^^^^^^^^^^^^^\n    })\n    ^ \n')
-    }
-  })
+    it( 'Test backtrace for r.db(dbName).table(tableName).replace({a:1}, {durability: "softt"})', async () => {
+        try {
+            r.nextVarId = 1
+            await r.db( dbName ).table( tableName ).replace( {
+                a: 1
+            }, {
+                durability: 'softt'
+            } ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Durability option `softt` unrecognized (options are "hard" and "soft") in:\nr.db("' + dbName + '").table("' + tableName + '")\n    .replace({\n        a: 1\n    }, {\n       ^\n        durability: "softt"\n        ^^^^^^^^^^^^^^^^^^^\n    })\n    ^ \n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 [ { type: 'POS', pos: 1 }, { type: 'POS', pos: 1 } ]
 
@@ -2297,17 +2479,18 @@ Expected type NUMBER but found STRING in:
 r.expr([1, 2]).map(r.row.add("eh"))
            ^^^^^^^^^^^^^^^
 */
-  it('Test backtrace for r.expr([1,2]).map(r.row.add("eh"))', async () => {
-    try {
-      r.nextVarId = 1
-      await r.expr([1, 2]).map(r.row.add('eh')).run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Expected type NUMBER but found STRING in:\nr.expr([1, 2]).map(r.row.add("eh"))\n                   ^^^^^^^^^^^^^^^ \n')
-    }
-  })
+    it( 'Test backtrace for r.expr([1,2]).map(r.row.add("eh"))', async () => {
+        try {
+            r.nextVarId = 1
+            await r.expr( [ 1, 2 ] ).map( r.row.add( 'eh' ) ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Expected type NUMBER but found STRING in:\nr.expr([1, 2]).map(r.row.add("eh"))\n                   ^^^^^^^^^^^^^^^ \n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 [ { type: 'POS', pos: 0 },
   { type: 'POS', pos: 0 },
@@ -2342,15 +2525,27 @@ r.table("foo").add(1).add(1).add("hello-super-long-string").add("another-long-st
     })
   })
 */
-  it('Test backtrace for r.table("foo").add(1).add(1).add("hello-super-long-string").add("another-long-string").add("one-last-string").map( function(doc) { return r.expr([1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16]).map(function(test) { return test("b").add("hello-super-long-string").add("another-long-string").add("one-last-string").add("hello-super-long-string").add("another-long-string").add("one-last-string").add("hello-super-long-string").add("another-long-string").add("one-last-string").add("hello-super-long-string").add("another-long-string").add("one-last-string").add("hello-super-long-string").add("another-long-string").add("one-last-string").mul(test("b")).merge({ firstName: "xxxxxx", lastName: "yyyy", email: "xxxxx@yyyy.com", phone: "xxx-xxx-xxxx" }); }).add(2).map(function(doc) { return doc.add("hello-super-long-string").add("another-long-string").add("one-last-string").add("hello-super-long-string").add("another-long-string").add("one-last-string").add("hello-super-long-string").add("another-long-string").add("one-last-string").add("hello-super-long-string").add("another-long-string").add("one-last-string").add("hello-super-long-string").add("another-long-string").add("one-last-string") }); })', async () => {
-    try {
-      r.nextVarId = 1
-      await r.table('foo').add(1).add(1).add('hello-super-long-string').add('another-long-string').add('one-last-string').map(function (doc) { return r.expr([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]).map(function (test) { return test('b').add('hello-super-long-string').add('another-long-string').add('one-last-string').add('hello-super-long-string').add('another-long-string').add('one-last-string').add('hello-super-long-string').add('another-long-string').add('one-last-string').add('hello-super-long-string').add('another-long-string').add('one-last-string').add('hello-super-long-string').add('another-long-string').add('one-last-string').mul(test('b')).merge({ firstName: 'xxxxxx', lastName: 'yyyy', email: 'xxxxx@yyyy.com', phone: 'xxx-xxx-xxxx' }) }).add(2).map(function (doc) { return doc.add('hello-super-long-string').add('another-long-string').add('one-last-string').add('hello-super-long-string').add('another-long-string').add('one-last-string').add('hello-super-long-string').add('another-long-string').add('one-last-string').add('hello-super-long-string').add('another-long-string').add('one-last-string').add('hello-super-long-string').add('another-long-string').add('one-last-string') }) }).run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === `Table \`test.foo\` does not exist in:
+    it( 'Test backtrace for r.table("foo").add(1).add(1).add("hello-super-long-string").add("another-long-string").add("one-last-string").map( function(doc) { return r.expr([1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16]).map(function(test) { return test("b").add("hello-super-long-string").add("another-long-string").add("one-last-string").add("hello-super-long-string").add("another-long-string").add("one-last-string").add("hello-super-long-string").add("another-long-string").add("one-last-string").add("hello-super-long-string").add("another-long-string").add("one-last-string").add("hello-super-long-string").add("another-long-string").add("one-last-string").mul(test("b")).merge({ firstName: "xxxxxx", lastName: "yyyy", email: "xxxxx@yyyy.com", phone: "xxx-xxx-xxxx" }); }).add(2).map(function(doc) { return doc.add("hello-super-long-string").add("another-long-string").add("one-last-string").add("hello-super-long-string").add("another-long-string").add("one-last-string").add("hello-super-long-string").add("another-long-string").add("one-last-string").add("hello-super-long-string").add("another-long-string").add("one-last-string").add("hello-super-long-string").add("another-long-string").add("one-last-string") }); })', async () => {
+        try {
+            r.nextVarId = 1
+            await r.table( 'foo' ).add( 1 ).add( 1 ).add( 'hello-super-long-string' ).add( 'another-long-string' ).add( 'one-last-string' ).map( function( doc ) {
+                return r.expr( [ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16 ] ).map( function( test ) {
+                    return test( 'b' ).add( 'hello-super-long-string' ).add( 'another-long-string' ).add( 'one-last-string' ).add( 'hello-super-long-string' ).add( 'another-long-string' ).add( 'one-last-string' ).add( 'hello-super-long-string' ).add( 'another-long-string' ).add( 'one-last-string' ).add( 'hello-super-long-string' ).add( 'another-long-string' ).add( 'one-last-string' ).add( 'hello-super-long-string' ).add( 'another-long-string' ).add( 'one-last-string' ).mul( test( 'b' ) ).merge( {
+                        firstName: 'xxxxxx',
+                        lastName: 'yyyy',
+                        email: 'xxxxx@yyyy.com',
+                        phone: 'xxx-xxx-xxxx'
+                    } )
+                } ).add( 2 ).map( function( doc ) {
+                    return doc.add( 'hello-super-long-string' ).add( 'another-long-string' ).add( 'one-last-string' ).add( 'hello-super-long-string' ).add( 'another-long-string' ).add( 'one-last-string' ).add( 'hello-super-long-string' ).add( 'another-long-string' ).add( 'one-last-string' ).add( 'hello-super-long-string' ).add( 'another-long-string' ).add( 'one-last-string' ).add( 'hello-super-long-string' ).add( 'another-long-string' ).add( 'one-last-string' )
+                } )
+            } ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === `Table \`test.foo\` does not exist in:
 r.table("foo").add(1).add(1).add("hello-super-long-string").add("another-long-string")
-^^^^^^^^^^^^^^                                                                        
+^^^^^^^^^^^^^^
     .add("one-last-string").map(function(var_1) {
         return r.expr([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]).map(function(var_2) {
             return var_2("b").add("hello-super-long-string").add("another-long-string").add("one-last-string")
@@ -2372,11 +2567,11 @@ r.table("foo").add(1).add(1).add("hello-super-long-string").add("another-long-st
                 .add("hello-super-long-string").add("another-long-string").add("one-last-string")
         })
     })
-`)
-    }
-  })
+` )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 [ 'b' ]
 
@@ -2388,17 +2583,21 @@ r.expr({
      ^^^^^^^^^^^^^^^^^^^
 })
 */
-  it('Test backtrace for r.expr({a:1, b:r.expr(1).add("eh")})', async () => {
-    try {
-      r.nextVarId = 1
-      await r.expr({a: 1, b: r.expr(1).add('eh')}).run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Expected type NUMBER but found STRING in:\nr.expr({\n    a: 1,\n    b: r.expr(1).add("eh")\n       ^^^^^^^^^^^^^^^^^^^\n})\n')
-    }
-  })
+    it( 'Test backtrace for r.expr({a:1, b:r.expr(1).add("eh")})', async () => {
+        try {
+            r.nextVarId = 1
+            await r.expr( {
+                a: 1,
+                b: r.expr( 1 ).add( 'eh' )
+            } ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Expected type NUMBER but found STRING in:\nr.expr({\n    a: 1,\n    b: r.expr(1).add("eh")\n       ^^^^^^^^^^^^^^^^^^^\n})\n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 []
 
@@ -2417,17 +2616,22 @@ r.db("330a8b0e7ff2501e855f0d45aebe6006").table("80179c85b797f92a3abbb0e40e7b06a3
   }).add(2)
   ^^^^^^^^^
 */
-  it('Test backtrace for r.db(dbName).table(tableName).replace({a:1}, {durability:"soft"}).add(2)', async () => {
-    try {
-      r.nextVarId = 1
-      await r.db(dbName).table(tableName).replace({a: 1}, {durability: 'soft'}).add(2).run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Expected type NUMBER but found OBJECT in:\nr.db("' + dbName + '").table("' + tableName + '")\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    .replace({\n    ^^^^^^^^^^\n        a: 1\n        ^^^^\n    }, {\n    ^^^^\n        durability: "soft"\n        ^^^^^^^^^^^^^^^^^^\n    }).add(2)\n    ^^^^^^^^^\n')
-    }
-  })
+    it( 'Test backtrace for r.db(dbName).table(tableName).replace({a:1}, {durability:"soft"}).add(2)', async () => {
+        try {
+            r.nextVarId = 1
+            await r.db( dbName ).table( tableName ).replace( {
+                a: 1
+            }, {
+                durability: 'soft'
+            } ).add( 2 ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Expected type NUMBER but found OBJECT in:\nr.db("' + dbName + '").table("' + tableName + '")\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    .replace({\n    ^^^^^^^^^^\n        a: 1\n        ^^^^\n    }, {\n    ^^^^\n        durability: "soft"\n        ^^^^^^^^^^^^^^^^^^\n    }).add(2)\n    ^^^^^^^^^\n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 [ { type: 'OPT', opt: 'durability' } ]
 
@@ -2443,17 +2647,22 @@ r.db("83db41722b445306270f0129b6bcbde0").table("1264cb52a222e32026ce2d67ac27bc23
   })
   ^
 */
-  it('Test backtrace for r.db(dbName).table(tableName).replace({a:1}, {durability:r.expr(1).add("heloo")})', async () => {
-    try {
-      r.nextVarId = 1
-      await r.db(dbName).table(tableName).replace({a: 1}, {durability: r.expr(1).add('heloo')}).run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Expected type NUMBER but found STRING in:\nr.db("' + dbName + '").table("' + tableName + '")\n    .replace({\n        a: 1\n    }, {\n       ^\n        durability: r.expr(1).add("heloo")\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    })\n    ^ \n')
-    }
-  })
+    it( 'Test backtrace for r.db(dbName).table(tableName).replace({a:1}, {durability:r.expr(1).add("heloo")})', async () => {
+        try {
+            r.nextVarId = 1
+            await r.db( dbName ).table( tableName ).replace( {
+                a: 1
+            }, {
+                durability: r.expr( 1 ).add( 'heloo' )
+            } ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Expected type NUMBER but found STRING in:\nr.db("' + dbName + '").table("' + tableName + '")\n    .replace({\n        a: 1\n    }, {\n       ^\n        durability: r.expr(1).add("heloo")\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    })\n    ^ \n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 [ { type: 'OPT', opt: 'durability' } ]
 
@@ -2469,17 +2678,22 @@ r.db("6dddeb36901f203298878f980598ce0a").table("5510e0388d908dca1fa4a6dbf00c2852
   })
   ^
 */
-  it('Test backtrace for r.db(dbName).table(tableName).replace({a:1}, {durability:r.expr(1).add("heloo")})', async () => {
-    try {
-      r.nextVarId = 1
-      await r.db(dbName).table(tableName).replace({a: 1}, {durability: r.expr(1).add('heloo')}).run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Expected type NUMBER but found STRING in:\nr.db("' + dbName + '").table("' + tableName + '")\n    .replace({\n        a: 1\n    }, {\n       ^\n        durability: r.expr(1).add("heloo")\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    })\n    ^ \n')
-    }
-  })
+    it( 'Test backtrace for r.db(dbName).table(tableName).replace({a:1}, {durability:r.expr(1).add("heloo")})', async () => {
+        try {
+            r.nextVarId = 1
+            await r.db( dbName ).table( tableName ).replace( {
+                a: 1
+            }, {
+                durability: r.expr( 1 ).add( 'heloo' )
+            } ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Expected type NUMBER but found STRING in:\nr.db("' + dbName + '").table("' + tableName + '")\n    .replace({\n        a: 1\n    }, {\n       ^\n        durability: r.expr(1).add("heloo")\n        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    })\n    ^ \n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 [ 'a' ]
 
@@ -2491,17 +2705,21 @@ r.expr({
   b: 2
 })
 */
-  it('Test backtrace for r.expr({a:r.expr(1).add("eh"), b: 2})', async () => {
-    try {
-      r.nextVarId = 1
-      await r.expr({a: r.expr(1).add('eh'), b: 2}).run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Expected type NUMBER but found STRING in:\nr.expr({\n    a: r.expr(1).add("eh"),\n       ^^^^^^^^^^^^^^^^^^^ \n    b: 2\n})\n')
-    }
-  })
+    it( 'Test backtrace for r.expr({a:r.expr(1).add("eh"), b: 2})', async () => {
+        try {
+            r.nextVarId = 1
+            await r.expr( {
+                a: r.expr( 1 ).add( 'eh' ),
+                b: 2
+            } ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Expected type NUMBER but found STRING in:\nr.expr({\n    a: r.expr(1).add("eh"),\n       ^^^^^^^^^^^^^^^^^^^ \n    b: 2\n})\n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 []
 
@@ -2510,17 +2728,18 @@ Expected type ARRAY but found STRING in:
 r.expr([1, 2, 3]).add("eh")
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^
 */
-  it('Test backtrace for r.expr([1,2,3]).add("eh")', async () => {
-    try {
-      r.nextVarId = 1
-      await r.expr([1, 2, 3]).add('eh').run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Expected type ARRAY but found STRING in:\nr.expr([1, 2, 3]).add("eh")\n^^^^^^^^^^^^^^^^^^^^^^^^^^^\n')
-    }
-  })
+    it( 'Test backtrace for r.expr([1,2,3]).add("eh")', async () => {
+        try {
+            r.nextVarId = 1
+            await r.expr( [ 1, 2, 3 ] ).add( 'eh' ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Expected type ARRAY but found STRING in:\nr.expr([1, 2, 3]).add("eh")\n^^^^^^^^^^^^^^^^^^^^^^^^^^^\n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 []
 
@@ -2533,17 +2752,20 @@ r.expr({
 }).add("eh")
 ^^^^^^^^^^^^
 */
-  it('Test backtrace for r.expr({a:1}).add("eh")', async () => {
-    try {
-      r.nextVarId = 1
-      await r.expr({a: 1}).add('eh').run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Expected type NUMBER but found OBJECT in:\nr.expr({\n^^^^^^^^\n    a: 1\n    ^^^^\n}).add("eh")\n^^^^^^^^^^^^\n')
-    }
-  })
+    it( 'Test backtrace for r.expr({a:1}).add("eh")', async () => {
+        try {
+            r.nextVarId = 1
+            await r.expr( {
+                a: 1
+            } ).add( 'eh' ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Expected type NUMBER but found OBJECT in:\nr.expr({\n^^^^^^^^\n    a: 1\n    ^^^^\n}).add("eh")\n^^^^^^^^^^^^\n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 [ { type: 'POS', pos: 1 } ]
 
@@ -2552,17 +2774,18 @@ Cannot perform get_field on a non-object non-sequence `1` in:
 r.expr([1, 2, 3]).group("foo")
             ^^^^^
 */
-  it('Test backtrace for r.expr([1,2,3]).group("foo")', async () => {
-    try {
-      r.nextVarId = 1
-      await r.expr([1, 2, 3]).group('foo').run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Cannot perform get_field on a non-object non-sequence `1` in:\nr.expr([1, 2, 3]).group("foo")\n                        ^^^^^ \n')
-    }
-  })
+    it( 'Test backtrace for r.expr([1,2,3]).group("foo")', async () => {
+        try {
+            r.nextVarId = 1
+            await r.expr( [ 1, 2, 3 ] ).group( 'foo' ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Cannot perform get_field on a non-object non-sequence `1` in:\nr.expr([1, 2, 3]).group("foo")\n                        ^^^^^ \n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 [ 0 ]
 
@@ -2576,17 +2799,18 @@ Expected type GROUPED_DATA but found DATUM:
 r.expr([1, 2, 3]).ungroup()
 ^^^^^^^^^^^^^^^^^
 */
-  it('Test backtrace for r.expr([1,2,3]).ungroup()', async () => {
-    try {
-      r.nextVarId = 1
-      await r.expr([1, 2, 3]).ungroup().run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Expected type GROUPED_DATA but found DATUM:\n[\n\t1,\n\t2,\n\t3\n] in:\nr.expr([1, 2, 3]).ungroup()\n^^^^^^^^^^^^^^^^^          \n')
-    }
-  })
+    it( 'Test backtrace for r.expr([1,2,3]).ungroup()', async () => {
+        try {
+            r.nextVarId = 1
+            await r.expr( [ 1, 2, 3 ] ).ungroup().run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Expected type GROUPED_DATA but found DATUM:\n[\n\t1,\n\t2,\n\t3\n] in:\nr.expr([1, 2, 3]).ungroup()\n^^^^^^^^^^^^^^^^^          \n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 []
 
@@ -2595,17 +2819,18 @@ Expected type NUMBER but found STRING in:
 r.expr([1, 2, 3, "hello"]).sum()
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 */
-  it('Test backtrace for r.expr([1,2,3,"hello"]).sum()', async () => {
-    try {
-      r.nextVarId = 1
-      await r.expr([1, 2, 3, 'hello']).sum().run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Expected type NUMBER but found STRING in:\nr.expr([1, 2, 3, "hello"]).sum()\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n')
-    }
-  })
+    it( 'Test backtrace for r.expr([1,2,3,"hello"]).sum()', async () => {
+        try {
+            r.nextVarId = 1
+            await r.expr( [ 1, 2, 3, 'hello' ] ).sum().run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Expected type NUMBER but found STRING in:\nr.expr([1, 2, 3, "hello"]).sum()\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 []
 
@@ -2614,17 +2839,18 @@ Expected type NUMBER but found STRING in:
 r.expr([1, 2, 3, "hello"]).avg()
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 */
-  it('Test backtrace for r.expr([1,2,3,"hello"]).avg()', async () => {
-    try {
-      r.nextVarId = 1
-      await r.expr([1, 2, 3, 'hello']).avg().run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Expected type NUMBER but found STRING in:\nr.expr([1, 2, 3, "hello"]).avg()\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n')
-    }
-  })
+    it( 'Test backtrace for r.expr([1,2,3,"hello"]).avg()', async () => {
+        try {
+            r.nextVarId = 1
+            await r.expr( [ 1, 2, 3, 'hello' ] ).avg().run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Expected type NUMBER but found STRING in:\nr.expr([1, 2, 3, "hello"]).avg()\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 []
 
@@ -2633,17 +2859,18 @@ Cannot take the min of an empty stream.  (If you passed `min` a field name, it m
 r.expr([]).min()
 ^^^^^^^^^^^^^^^^
 */
-  it('Test backtrace for r.expr([]).min()', async () => {
-    try {
-      r.nextVarId = 1
-      await r.expr([]).min().run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Cannot take the min of an empty stream.  (If you passed `min` a field name, it may be that no elements of the stream had that field.) in:\nr.expr([]).min()\n^^^^^^^^^^^^^^^^\n')
-    }
-  })
+    it( 'Test backtrace for r.expr([]).min()', async () => {
+        try {
+            r.nextVarId = 1
+            await r.expr( [] ).min().run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Cannot take the min of an empty stream.  (If you passed `min` a field name, it may be that no elements of the stream had that field.) in:\nr.expr([]).min()\n^^^^^^^^^^^^^^^^\n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 []
 
@@ -2652,17 +2879,18 @@ Cannot take the max of an empty stream.  (If you passed `max` a field name, it m
 r.expr([]).max()
 ^^^^^^^^^^^^^^^^
 */
-  it('Test backtrace for r.expr([]).max()', async () => {
-    try {
-      r.nextVarId = 1
-      await r.expr([]).max().run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Cannot take the max of an empty stream.  (If you passed `max` a field name, it may be that no elements of the stream had that field.) in:\nr.expr([]).max()\n^^^^^^^^^^^^^^^^\n')
-    }
-  })
+    it( 'Test backtrace for r.expr([]).max()', async () => {
+        try {
+            r.nextVarId = 1
+            await r.expr( [] ).max().run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Cannot take the max of an empty stream.  (If you passed `max` a field name, it may be that no elements of the stream had that field.) in:\nr.expr([]).max()\n^^^^^^^^^^^^^^^^\n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 []
 
@@ -2671,17 +2899,18 @@ Cannot take the average of an empty stream.  (If you passed `avg` a field name, 
 r.expr([]).avg()
 ^^^^^^^^^^^^^^^^
 */
-  it('Test backtrace for r.expr([]).avg()', async () => {
-    try {
-      r.nextVarId = 1
-      await r.expr([]).avg().run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Cannot take the average of an empty stream.  (If you passed `avg` a field name, it may be that no elements of the stream had that field.) in:\nr.expr([]).avg()\n^^^^^^^^^^^^^^^^\n')
-    }
-  })
+    it( 'Test backtrace for r.expr([]).avg()', async () => {
+        try {
+            r.nextVarId = 1
+            await r.expr( [] ).avg().run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Cannot take the average of an empty stream.  (If you passed `avg` a field name, it may be that no elements of the stream had that field.) in:\nr.expr([]).avg()\n^^^^^^^^^^^^^^^^\n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 [ { type: 'POS', pos: 0 } ]
 
@@ -2690,17 +2919,18 @@ Expected type STRING but found NUMBER in:
 r.expr(1).upcase()
 ^^^^^^^^^
 */
-  it('Test backtrace for r.expr(1).upcase()', async () => {
-    try {
-      r.nextVarId = 1
-      await r.expr(1).upcase().run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Expected type STRING but found NUMBER in:\nr.expr(1).upcase()\n^^^^^^^^^         \n')
-    }
-  })
+    it( 'Test backtrace for r.expr(1).upcase()', async () => {
+        try {
+            r.nextVarId = 1
+            await r.expr( 1 ).upcase().run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Expected type STRING but found NUMBER in:\nr.expr(1).upcase()\n^^^^^^^^^         \n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 [ { type: 'POS', pos: 0 } ]
 
@@ -2709,17 +2939,18 @@ Expected type STRING but found NUMBER in:
 r.expr(1).downcase()
 ^^^^^^^^^
 */
-  it('Test backtrace for r.expr(1).downcase()', async () => {
-    try {
-      r.nextVarId = 1
-      await r.expr(1).downcase().run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Expected type STRING but found NUMBER in:\nr.expr(1).downcase()\n^^^^^^^^^           \n')
-    }
-  })
+    it( 'Test backtrace for r.expr(1).downcase()', async () => {
+        try {
+            r.nextVarId = 1
+            await r.expr( 1 ).downcase().run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Expected type STRING but found NUMBER in:\nr.expr(1).downcase()\n^^^^^^^^^           \n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 [ 0, 1, 0 ]
 
@@ -2730,17 +2961,20 @@ r.expr(1).do(function(var_1) {
           ^
 })
 */
-  it('Test backtrace for r.expr(1).do(function(v) { return r.object(1, 2) })', async () => {
-    try {
-      r.nextVarId = 1
-      await r.expr(1).do(function (v) { return r.object(1, 2) }).run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Expected type STRING but found NUMBER in:\nr.expr(1).do(function(var_1) {\n    return r.object(1, 2)\n                    ^    \n})\n')
-    }
-  })
+    it( 'Test backtrace for r.expr(1).do(function(v) { return r.object(1, 2) })', async () => {
+        try {
+            r.nextVarId = 1
+            await r.expr( 1 ).do( function( v ) {
+                return r.object( 1, 2 )
+            } ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Expected type STRING but found NUMBER in:\nr.expr(1).do(function(var_1) {\n    return r.object(1, 2)\n                    ^    \n})\n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 [ 0, 1 ]
 
@@ -2751,17 +2985,20 @@ r.expr(1).do(function(var_1) {
        ^^^^^^^^^^^^^
 })
 */
-  it('Test backtrace for r.expr(1).do(function(v) { return r.object("a") })', async () => {
-    try {
-      r.nextVarId = 1
-      await r.expr(1).do(function (v) { return r.object('a') }).run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'OBJECT expects an even number of arguments (but found 1) in:\nr.expr(1).do(function(var_1) {\n    return r.object("a")\n           ^^^^^^^^^^^^^\n})\n')
-    }
-  })
+    it( 'Test backtrace for r.expr(1).do(function(v) { return r.object("a") })', async () => {
+        try {
+            r.nextVarId = 1
+            await r.expr( 1 ).do( function( v ) {
+                return r.object( 'a' )
+            } ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'OBJECT expects an even number of arguments (but found 1) in:\nr.expr(1).do(function(var_1) {\n    return r.object("a")\n           ^^^^^^^^^^^^^\n})\n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 []
 
@@ -2774,17 +3011,20 @@ r.random(1, 2, {
 }).sub("foo")
 ^^^^^^^^^^^^^
 */
-  it('Test backtrace for r.random(1,2,{float: true}).sub("foo")', async () => {
-    try {
-      r.nextVarId = 1
-      await r.random(1, 2, {float: true}).sub('foo').run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Expected type NUMBER but found STRING in:\nr.random(1, 2, {\n^^^^^^^^^^^^^^^^\n    float: true\n    ^^^^^^^^^^^\n}).sub("foo")\n^^^^^^^^^^^^^\n')
-    }
-  })
+    it( 'Test backtrace for r.random(1,2,{float: true}).sub("foo")', async () => {
+        try {
+            r.nextVarId = 1
+            await r.random( 1, 2, {
+                float: true
+            } ).sub( 'foo' ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Expected type NUMBER but found STRING in:\nr.random(1, 2, {\n^^^^^^^^^^^^^^^^\n    float: true\n    ^^^^^^^^^^^\n}).sub("foo")\n^^^^^^^^^^^^^\n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 [ 0 ]
 
@@ -2793,34 +3033,36 @@ Expected type NUMBER but found STRING in:
 r.random("foo", "bar")
      ^^^^^
 */
-  it('Test backtrace for r.random("foo", "bar")', async () => {
-    try {
-      r.nextVarId = 1
-      await r.random('foo', 'bar').run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Expected type NUMBER but found STRING in:\nr.random("foo", "bar")\n         ^^^^^        \n')
-    }
-  })
+    it( 'Test backtrace for r.random("foo", "bar")', async () => {
+        try {
+            r.nextVarId = 1
+            await r.random( 'foo', 'bar' ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Expected type NUMBER but found STRING in:\nr.random("foo", "bar")\n         ^^^^^        \n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 undefined
 
 Error:
 `random` takes at most 3 arguments, 4 provided.
 */
-  it('Test backtrace for r.random("foo", "bar", "buzz", "lol")', async () => {
-    try {
-      r.nextVarId = 1
-      await r.random('foo', 'bar', 'buzz', 'lol').run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === '`random` takes at most 3 arguments, 4 provided.')
-    }
-  })
+    it( 'Test backtrace for r.random("foo", "bar", "buzz", "lol")', async () => {
+        try {
+            r.nextVarId = 1
+            await r.random( 'foo', 'bar', 'buzz', 'lol' ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === '`random` takes at most 3 arguments, 4 provided.' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 [ 0 ]
 
@@ -2832,17 +3074,18 @@ r.db("bd98452de5ea16f3572ed0d404a2e99c").table("c966dac895ef558f3dfdbfb8be003374
   .changes().add(2)
   ^^^^^^^^^^
 */
-  it('Test backtrace for r.db(dbName).table(tableName).changes().add(2)', async () => {
-    try {
-      r.nextVarId = 1
-      await r.db(dbName).table(tableName).changes().add(2).run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Expected type DATUM but found SEQUENCE:\nVALUE SEQUENCE in:\nr.db("' + dbName + '").table("' + tableName + '")\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    .changes().add(2)\n    ^^^^^^^^^^       \n')
-    }
-  })
+    it( 'Test backtrace for r.db(dbName).table(tableName).changes().add(2)', async () => {
+        try {
+            r.nextVarId = 1
+            await r.db( dbName ).table( tableName ).changes().add( 2 ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Expected type DATUM but found SEQUENCE:\nVALUE SEQUENCE in:\nr.db("' + dbName + '").table("' + tableName + '")\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    .changes().add(2)\n    ^^^^^^^^^^       \n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 [ 0 ]
 
@@ -2855,17 +3098,18 @@ null in:
 r.http("").add(2)
 ^^^^^^^^^^
 */
-  it('Test backtrace for r.http("").add(2)', async () => {
-    try {
-      r.nextVarId = 1
-      await r.http('').add(2).run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Error in HTTP GET of ``: URL using bad/illegal format or missing URL.\nheader:\nnull\nbody:\nnull in:\nr.http("").add(2)\n^^^^^^^^^^       \n')
-    }
-  })
+    it( 'Test backtrace for r.http("").add(2)', async () => {
+        try {
+            r.nextVarId = 1
+            await r.http( '' ).add( 2 ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Error in HTTP GET of ``: URL using bad/illegal format or missing URL.\nheader:\nnull\nbody:\nnull in:\nr.http("").add(2)\n^^^^^^^^^^       \n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 []
 
@@ -2874,17 +3118,18 @@ Expected type STRING but found NUMBER in:
 r.args(["foo", "bar"]).add(2)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 */
-  it('Test backtrace for r.args(["foo", "bar"]).add(2)', async () => {
-    try {
-      r.nextVarId = 1
-      await r.args(['foo', 'bar']).add(2).run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Expected type STRING but found NUMBER in:\nr.args(["foo", "bar"]).add(2)\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n')
-    }
-  })
+    it( 'Test backtrace for r.args(["foo", "bar"]).add(2)', async () => {
+        try {
+            r.nextVarId = 1
+            await r.args( [ 'foo', 'bar' ] ).add( 2 ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Expected type STRING but found NUMBER in:\nr.args(["foo", "bar"]).add(2)\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 [ { type: 'POS', pos: 0 }, { type: 'POS', pos: 1 } ]
 
@@ -2895,17 +3140,20 @@ r.expr(1).do(function(var_1) {
        ^^^^^^^^^^^^^^^^
 })
 */
-  it('Test backtrace for r.do(1,function( b) { return b.add("foo") })', async () => {
-    try {
-      r.nextVarId = 1
-      await r.do(1, function (b) { return b.add('foo') }).run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Expected type NUMBER but found STRING in:\nr.expr(1).do(function(var_1) {\n    return var_1.add("foo")\n           ^^^^^^^^^^^^^^^^\n})\n')
-    }
-  })
+    it( 'Test backtrace for r.do(1,function( b) { return b.add("foo") })', async () => {
+        try {
+            r.nextVarId = 1
+            await r.do( 1, function( b ) {
+                return b.add( 'foo' )
+            } ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Expected type NUMBER but found STRING in:\nr.expr(1).do(function(var_1) {\n    return var_1.add("foo")\n           ^^^^^^^^^^^^^^^^\n})\n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 [ 0 ]
 
@@ -2921,17 +3169,20 @@ r.db("0c24bc6421463a0da33452e38a842f20").table("e1bf8f82ad33ed56f7e04e0c2ba97fcc
   }).add(1)
   ^^
 */
-  it('Test backtrace for r.db(dbName).table(tableName).between("foo", "bar", {index: "id"}).add(1)', async () => {
-    try {
-      r.nextVarId = 1
-      await r.db(dbName).table(tableName).between('foo', 'bar', {index: 'id'}).add(1).run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Expected type DATUM but found TABLE_SLICE:\nSELECTION ON table(' + tableName + ') in:\nr.db("' + dbName + '").table("' + tableName + '")\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    .between("foo", "bar", {\n    ^^^^^^^^^^^^^^^^^^^^^^^^\n        index: "id"\n        ^^^^^^^^^^^\n    }).add(1)\n    ^^       \n')
-    }
-  })
+    it( 'Test backtrace for r.db(dbName).table(tableName).between("foo", "bar", {index: "id"}).add(1)', async () => {
+        try {
+            r.nextVarId = 1
+            await r.db( dbName ).table( tableName ).between( 'foo', 'bar', {
+                index: 'id'
+            } ).add( 1 ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Expected type DATUM but found TABLE_SLICE:\nSELECTION ON table(' + tableName + ') in:\nr.db("' + dbName + '").table("' + tableName + '")\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    .between("foo", "bar", {\n    ^^^^^^^^^^^^^^^^^^^^^^^^\n        index: "id"\n        ^^^^^^^^^^^\n    }).add(1)\n    ^^       \n' )
+        }
+    } )
 
-  /*
+    /*
 // Note: Buggy? It should be SELECTION, not TABLE_SLICE
 Frames:
 [ 0 ]
@@ -2948,17 +3199,20 @@ r.db("bdff9659bb18007d268d810929df5d90").table("d6063464b40e094f48ec13bbee46d457
   }).add(1)
   ^^
 */
-  it('Test backtrace for r.db(dbName).table(tableName).orderBy({index: "id"}).add(1)', async () => {
-    try {
-      r.nextVarId = 1
-      await r.db(dbName).table(tableName).orderBy({index: 'id'}).add(1).run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Expected type DATUM but found TABLE_SLICE:\nSELECTION ON table(' + tableName + ') in:\nr.db("' + dbName + '").table("' + tableName + '")\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    .orderBy({\n    ^^^^^^^^^^\n        index: "id"\n        ^^^^^^^^^^^\n    }).add(1)\n    ^^       \n')
-    }
-  })
+    it( 'Test backtrace for r.db(dbName).table(tableName).orderBy({index: "id"}).add(1)', async () => {
+        try {
+            r.nextVarId = 1
+            await r.db( dbName ).table( tableName ).orderBy( {
+                index: 'id'
+            } ).add( 1 ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Expected type DATUM but found TABLE_SLICE:\nSELECTION ON table(' + tableName + ') in:\nr.db("' + dbName + '").table("' + tableName + '")\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    .orderBy({\n    ^^^^^^^^^^\n        index: "id"\n        ^^^^^^^^^^^\n    }).add(1)\n    ^^       \n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 []
 
@@ -2967,17 +3221,18 @@ Expected type NUMBER but found PTYPE<BINARY> in:
 r.binary("foo").add(1)
 ^^^^^^^^^^^^^^^^^^^^^^
 */
-  it('Test backtrace for r.binary("foo").add(1)', async () => {
-    try {
-      r.nextVarId = 1
-      await r.binary('foo').add(1).run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Expected type NUMBER but found PTYPE<BINARY> in:\nr.binary("foo").add(1)\n^^^^^^^^^^^^^^^^^^^^^^\n')
-    }
-  })
+    it( 'Test backtrace for r.binary("foo").add(1)', async () => {
+        try {
+            r.nextVarId = 1
+            await r.binary( 'foo' ).add( 1 ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Expected type NUMBER but found PTYPE<BINARY> in:\nr.binary("foo").add(1)\n^^^^^^^^^^^^^^^^^^^^^^\n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 []
 
@@ -2986,17 +3241,18 @@ Expected type NUMBER but found PTYPE<BINARY> in:
 r.binary(<Buffer>).add(1)
 ^^^^^^^^^^^^^^^^^^^^^^^^^
 */
-  it('Test backtrace for r.binary(Buffer.from([0,1,2,3,4])).add(1)', async () => {
-    try {
-      r.nextVarId = 1
-      await r.binary(Buffer.from([0, 1, 2, 3, 4])).add(1).run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Expected type NUMBER but found PTYPE<BINARY> in:\nr.binary(<Buffer>).add(1)\n^^^^^^^^^^^^^^^^^^^^^^^^^\n')
-    }
-  })
+    it( 'Test backtrace for r.binary(Buffer.from([0,1,2,3,4])).add(1)', async () => {
+        try {
+            r.nextVarId = 1
+            await r.binary( Buffer.from( [ 0, 1, 2, 3, 4 ] ) ).add( 1 ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Expected type NUMBER but found PTYPE<BINARY> in:\nr.binary(<Buffer>).add(1)\n^^^^^^^^^^^^^^^^^^^^^^^^^\n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 [ 0, 1 ]
 
@@ -3007,17 +3263,20 @@ r.expr(1).do(function(var_1) {
        ^^^^^^^^^^^^^^^^^^^^^^^^
 })
 */
-  it('Test backtrace for r.do(1,function( b) { return r.point(1, 2).add("foo") })', async () => {
-    try {
-      r.nextVarId = 1
-      await r.do(1, function (b) { return r.point(1, 2).add('foo') }).run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Expected type NUMBER but found PTYPE<GEOMETRY> in:\nr.expr(1).do(function(var_1) {\n    return r.point(1, 2).add("foo")\n           ^^^^^^^^^^^^^^^^^^^^^^^^\n})\n')
-    }
-  })
+    it( 'Test backtrace for r.do(1,function( b) { return r.point(1, 2).add("foo") })', async () => {
+        try {
+            r.nextVarId = 1
+            await r.do( 1, function( b ) {
+                return r.point( 1, 2 ).add( 'foo' )
+            } ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Expected type NUMBER but found PTYPE<GEOMETRY> in:\nr.expr(1).do(function(var_1) {\n    return r.point(1, 2).add("foo")\n           ^^^^^^^^^^^^^^^^^^^^^^^^\n})\n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 [ 0, 1, 0 ]
 
@@ -3028,17 +3287,20 @@ r.expr(1).do(function(var_1) {
        ^^^^^^^^^^^^
 })
 */
-  it('Test backtrace for r.do(1,function( b) { return r.line(1, 2).add("foo") })', async () => {
-    try {
-      r.nextVarId = 1
-      await r.do(1, function (b) { return r.line(1, 2).add('foo') }).run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Expected type ARRAY but found NUMBER in:\nr.expr(1).do(function(var_1) {\n    return r.line(1, 2).add("foo")\n           ^^^^^^^^^^^^           \n})\n')
-    }
-  })
+    it( 'Test backtrace for r.do(1,function( b) { return r.line(1, 2).add("foo") })', async () => {
+        try {
+            r.nextVarId = 1
+            await r.do( 1, function( b ) {
+                return r.line( 1, 2 ).add( 'foo' )
+            } ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Expected type ARRAY but found NUMBER in:\nr.expr(1).do(function(var_1) {\n    return r.line(1, 2).add("foo")\n           ^^^^^^^^^^^^           \n})\n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 [ 0, 1, 0 ]
 
@@ -3049,17 +3311,20 @@ r.expr(1).do(function(var_1) {
        ^^^^^^^^^^^^^^
 })
 */
-  it('Test backtrace for r.do(1,function( b) { return r.circle(1, 2).add("foo") })', async () => {
-    try {
-      r.nextVarId = 1
-      await r.do(1, function (b) { return r.circle(1, 2).add('foo') }).run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Expected type ARRAY but found NUMBER in:\nr.expr(1).do(function(var_1) {\n    return r.circle(1, 2).add("foo")\n           ^^^^^^^^^^^^^^           \n})\n')
-    }
-  })
+    it( 'Test backtrace for r.do(1,function( b) { return r.circle(1, 2).add("foo") })', async () => {
+        try {
+            r.nextVarId = 1
+            await r.do( 1, function( b ) {
+                return r.circle( 1, 2 ).add( 'foo' )
+            } ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Expected type ARRAY but found NUMBER in:\nr.expr(1).do(function(var_1) {\n    return r.circle(1, 2).add("foo")\n           ^^^^^^^^^^^^^^           \n})\n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 [ 0, 1, 0 ]
 
@@ -3070,17 +3335,20 @@ r.expr(1).do(function(var_1) {
        ^^^^^^^^^^^^^^^^^^
 })
 */
-  it('Test backtrace for r.do(1,function( b) { return r.polygon(1, 2, 3).add("foo") })', async () => {
-    try {
-      r.nextVarId = 1
-      await r.do(1, function (b) { return r.polygon(1, 2, 3).add('foo') }).run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Expected type ARRAY but found NUMBER in:\nr.expr(1).do(function(var_1) {\n    return r.polygon(1, 2, 3).add("foo")\n           ^^^^^^^^^^^^^^^^^^           \n})\n')
-    }
-  })
+    it( 'Test backtrace for r.do(1,function( b) { return r.polygon(1, 2, 3).add("foo") })', async () => {
+        try {
+            r.nextVarId = 1
+            await r.do( 1, function( b ) {
+                return r.polygon( 1, 2, 3 ).add( 'foo' )
+            } ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Expected type ARRAY but found NUMBER in:\nr.expr(1).do(function(var_1) {\n    return r.polygon(1, 2, 3).add("foo")\n           ^^^^^^^^^^^^^^^^^^           \n})\n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 [ 0, 1, 0, 1 ]
 
@@ -3091,17 +3359,20 @@ r.expr(1).do(function(var_1) {
                             ^
 })
 */
-  it('Test backtrace for r.do(1,function( b) { return r.polygon([0,0], [1,1], [2,3]).polygonSub(3).add("foo") })', async () => {
-    try {
-      r.nextVarId = 1
-      await r.do(1, function (b) { return r.polygon([0, 0], [1, 1], [2, 3]).polygonSub(3).add('foo') }).run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Not a GEOMETRY pseudotype: `3` in:\nr.expr(1).do(function(var_1) {\n    return r.polygon([0, 0], [1, 1], [2, 3]).polygonSub(3).add("foo")\n                                                        ^            \n})\n')
-    }
-  })
+    it( 'Test backtrace for r.do(1,function( b) { return r.polygon([0,0], [1,1], [2,3]).polygonSub(3).add("foo") })', async () => {
+        try {
+            r.nextVarId = 1
+            await r.do( 1, function( b ) {
+                return r.polygon( [ 0, 0 ], [ 1, 1 ], [ 2, 3 ] ).polygonSub( 3 ).add( 'foo' )
+            } ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Not a GEOMETRY pseudotype: `3` in:\nr.expr(1).do(function(var_1) {\n    return r.polygon([0, 0], [1, 1], [2, 3]).polygonSub(3).add("foo")\n                                                        ^            \n})\n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 [ 0, 1, 0, 0 ]
 
@@ -3112,17 +3383,20 @@ r.expr(1).do(function(var_1) {
        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 })
 */
-  it('Test backtrace for r.do(1,function( b) { return r.polygon([0,0], [1,1], [2,3]).fill().polygonSub(3).add("foo") })', async () => {
-    try {
-      r.nextVarId = 1
-      await r.do(1, function (b) { return r.polygon([0, 0], [1, 1], [2, 3]).fill().polygonSub(3).add('foo') }).run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Expected geometry of type `LineString` but found `Polygon` in:\nr.expr(1).do(function(var_1) {\n    return r.polygon([0, 0], [1, 1], [2, 3]).fill().polygonSub(3).add("foo")\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^                         \n})\n')
-    }
-  })
+    it( 'Test backtrace for r.do(1,function( b) { return r.polygon([0,0], [1,1], [2,3]).fill().polygonSub(3).add("foo") })', async () => {
+        try {
+            r.nextVarId = 1
+            await r.do( 1, function( b ) {
+                return r.polygon( [ 0, 0 ], [ 1, 1 ], [ 2, 3 ] ).fill().polygonSub( 3 ).add( 'foo' )
+            } ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Expected geometry of type `LineString` but found `Polygon` in:\nr.expr(1).do(function(var_1) {\n    return r.polygon([0, 0], [1, 1], [2, 3]).fill().polygonSub(3).add("foo")\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^                         \n})\n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 [ 0, 1, 0, 1, 0 ]
 
@@ -3133,17 +3407,20 @@ r.expr(1).do(function(var_1) {
                             ^^^^^^^^^^^^^
 })
 */
-  it('Test backtrace for r.do(1,function( b) { return r.polygon([0,0], [1,1], [2,3]).distance(r.expr("foo").polygonSub(3)).add("foo") })', async () => {
-    try {
-      r.nextVarId = 1
-      await r.do(1, function (b) { return r.polygon([0, 0], [1, 1], [2, 3]).distance(r.expr('foo').polygonSub(3)).add('foo') }).run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Not a GEOMETRY pseudotype: `"foo"` in:\nr.expr(1).do(function(var_1) {\n    return r.polygon([0, 0], [1, 1], [2, 3]).distance(r.expr("foo").polygonSub(3)).add("foo")\n                                                      ^^^^^^^^^^^^^                          \n})\n')
-    }
-  })
+    it( 'Test backtrace for r.do(1,function( b) { return r.polygon([0,0], [1,1], [2,3]).distance(r.expr("foo").polygonSub(3)).add("foo") })', async () => {
+        try {
+            r.nextVarId = 1
+            await r.do( 1, function( b ) {
+                return r.polygon( [ 0, 0 ], [ 1, 1 ], [ 2, 3 ] ).distance( r.expr( 'foo' ).polygonSub( 3 ) ).add( 'foo' )
+            } ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Not a GEOMETRY pseudotype: `"foo"` in:\nr.expr(1).do(function(var_1) {\n    return r.polygon([0, 0], [1, 1], [2, 3]).distance(r.expr("foo").polygonSub(3)).add("foo")\n                                                      ^^^^^^^^^^^^^                          \n})\n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 [ 1 ]
 
@@ -3153,17 +3430,18 @@ r.db("43d3ef1b574ce3176bd8a6a573be3417").table("4428ef38de9fae93c0ca5f880a296b31
   .getIntersecting(r.circle(0, 1))
            ^^^^^^^^^^^^^^
 */
-  it('Test backtrace for r.db(dbName).table(tableName).getIntersecting(r.circle(0, 1), 3)', async () => {
-    try {
-      r.nextVarId = 1
-      await r.db(dbName).table(tableName).getIntersecting(r.circle(0, 1), 3).run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Expected type ARRAY but found NUMBER in:\nr.db("' + dbName + '").table("' + tableName + '")\n    .getIntersecting(r.circle(0, 1))\n                     ^^^^^^^^^^^^^^ \n')
-    }
-  })
+    it( 'Test backtrace for r.db(dbName).table(tableName).getIntersecting(r.circle(0, 1), 3)', async () => {
+        try {
+            r.nextVarId = 1
+            await r.db( dbName ).table( tableName ).getIntersecting( r.circle( 0, 1 ), 3 ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Expected type ARRAY but found NUMBER in:\nr.db("' + dbName + '").table("' + tableName + '")\n    .getIntersecting(r.circle(0, 1))\n                     ^^^^^^^^^^^^^^ \n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 [ 1 ]
 
@@ -3173,17 +3451,18 @@ r.db("9fd8231574663499a11f93d205835f51").table("4463dfde70cea8f03266cd78cfec151d
   .getNearest(r.circle(0, 1))
         ^^^^^^^^^^^^^^
 */
-  it('Test backtrace for r.db(dbName).table(tableName).getNearest(r.circle(0, 1), 3)', async () => {
-    try {
-      r.nextVarId = 1
-      await r.db(dbName).table(tableName).getNearest(r.circle(0, 1), 3).run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Expected type ARRAY but found NUMBER in:\nr.db("' + dbName + '").table("' + tableName + '")\n    .getNearest(r.circle(0, 1))\n                ^^^^^^^^^^^^^^ \n')
-    }
-  })
+    it( 'Test backtrace for r.db(dbName).table(tableName).getNearest(r.circle(0, 1), 3)', async () => {
+        try {
+            r.nextVarId = 1
+            await r.db( dbName ).table( tableName ).getNearest( r.circle( 0, 1 ), 3 ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Expected type ARRAY but found NUMBER in:\nr.db("' + dbName + '").table("' + tableName + '")\n    .getNearest(r.circle(0, 1))\n                ^^^^^^^^^^^^^^ \n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 [ 1 ]
 
@@ -3196,17 +3475,18 @@ Not a GEOMETRY pseudotype: `[
 r.polygon([0, 0], [0, 1], [1, 1]).includes([0, 1, 3])
                                            ^^^^^^^^^
 */
-  it('Test backtrace for r.polygon([0, 0], [0, 1], [1, 1]).includes(r.expr([0, 1, 3]))', async () => {
-    try {
-      r.nextVarId = 1
-      await r.polygon([0, 0], [0, 1], [1, 1]).includes(r.expr([0, 1, 3])).run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Not a GEOMETRY pseudotype: `[\n\t0,\n\t1,\n\t3\n]` in:\nr.polygon([0, 0], [0, 1], [1, 1]).includes([0, 1, 3])\n                                           ^^^^^^^^^ \n')
-    }
-  })
+    it( 'Test backtrace for r.polygon([0, 0], [0, 1], [1, 1]).includes(r.expr([0, 1, 3]))', async () => {
+        try {
+            r.nextVarId = 1
+            await r.polygon( [ 0, 0 ], [ 0, 1 ], [ 1, 1 ] ).includes( r.expr( [ 0, 1, 3 ] ) ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Not a GEOMETRY pseudotype: `[\n\t0,\n\t1,\n\t3\n]` in:\nr.polygon([0, 0], [0, 1], [1, 1]).includes([0, 1, 3])\n                                           ^^^^^^^^^ \n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 [ 1 ]
 
@@ -3219,17 +3499,18 @@ Not a GEOMETRY pseudotype: `[
 r.polygon([0, 0], [0, 1], [1, 1]).intersects([0, 1, 3])
                                              ^^^^^^^^^
 */
-  it('Test backtrace for r.polygon([0, 0], [0, 1], [1, 1]).intersects(r.expr([0, 1, 3]))', async () => {
-    try {
-      r.nextVarId = 1
-      await r.polygon([0, 0], [0, 1], [1, 1]).intersects(r.expr([0, 1, 3])).run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Not a GEOMETRY pseudotype: `[\n\t0,\n\t1,\n\t3\n]` in:\nr.polygon([0, 0], [0, 1], [1, 1]).intersects([0, 1, 3])\n                                             ^^^^^^^^^ \n')
-    }
-  })
+    it( 'Test backtrace for r.polygon([0, 0], [0, 1], [1, 1]).intersects(r.expr([0, 1, 3]))', async () => {
+        try {
+            r.nextVarId = 1
+            await r.polygon( [ 0, 0 ], [ 0, 1 ], [ 1, 1 ] ).intersects( r.expr( [ 0, 1, 3 ] ) ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Not a GEOMETRY pseudotype: `[\n\t0,\n\t1,\n\t3\n]` in:\nr.polygon([0, 0], [0, 1], [1, 1]).intersects([0, 1, 3])\n                                             ^^^^^^^^^ \n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 [ 1 ]
 
@@ -3242,17 +3523,18 @@ Not a GEOMETRY pseudotype: `[
 r.polygon([0, 0], [0, 1], [1, 1]).includes([0, 1, 3])
                                            ^^^^^^^^^
 */
-  it('Test backtrace for r.polygon([0, 0], [0, 1], [1, 1]).includes(r.expr([0, 1, 3]))', async () => {
-    try {
-      r.nextVarId = 1
-      await r.polygon([0, 0], [0, 1], [1, 1]).includes(r.expr([0, 1, 3])).run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Not a GEOMETRY pseudotype: `[\n\t0,\n\t1,\n\t3\n]` in:\nr.polygon([0, 0], [0, 1], [1, 1]).includes([0, 1, 3])\n                                           ^^^^^^^^^ \n')
-    }
-  })
+    it( 'Test backtrace for r.polygon([0, 0], [0, 1], [1, 1]).includes(r.expr([0, 1, 3]))', async () => {
+        try {
+            r.nextVarId = 1
+            await r.polygon( [ 0, 0 ], [ 0, 1 ], [ 1, 1 ] ).includes( r.expr( [ 0, 1, 3 ] ) ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Not a GEOMETRY pseudotype: `[\n\t0,\n\t1,\n\t3\n]` in:\nr.polygon([0, 0], [0, 1], [1, 1]).includes([0, 1, 3])\n                                           ^^^^^^^^^ \n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 [ 0 ]
 
@@ -3264,17 +3546,18 @@ r.db("92cc9fb8833587dcb7e02a62bdf53145").table("bbbe68e9a13071ae0c579471d1e30f45
   .orderBy(r.desc("foo")).add(1)
   ^^^^^^^^^^^^^^^^^^^^^^^
 */
-  it('Test backtrace for r.db(dbName).table(tableName).orderBy(r.desc("foo")).add(1)', async () => {
-    try {
-      r.nextVarId = 1
-      await r.db(dbName).table(tableName).orderBy(r.desc('foo')).add(1).run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Expected type DATUM but found SELECTION:\nSELECTION ON table(' + tableName + ') in:\nr.db("' + dbName + '").table("' + tableName + '")\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    .orderBy(r.desc("foo")).add(1)\n    ^^^^^^^^^^^^^^^^^^^^^^^       \n')
-    }
-  })
+    it( 'Test backtrace for r.db(dbName).table(tableName).orderBy(r.desc("foo")).add(1)', async () => {
+        try {
+            r.nextVarId = 1
+            await r.db( dbName ).table( tableName ).orderBy( r.desc( 'foo' ) ).add( 1 ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Expected type DATUM but found SELECTION:\nSELECTION ON table(' + tableName + ') in:\nr.db("' + dbName + '").table("' + tableName + '")\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    .orderBy(r.desc("foo")).add(1)\n    ^^^^^^^^^^^^^^^^^^^^^^^       \n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 [ 0 ]
 
@@ -3286,17 +3569,18 @@ r.db("7af5e5289c00f3ea521a3859c666f03c").table("0488a0abab5f89bd2de2cbf816649aa3
   .orderBy(r.asc("foo")).add(1)
   ^^^^^^^^^^^^^^^^^^^^^^
 */
-  it('Test backtrace for r.db(dbName).table(tableName).orderBy(r.asc("foo")).add(1)', async () => {
-    try {
-      r.nextVarId = 1
-      await r.db(dbName).table(tableName).orderBy(r.asc('foo')).add(1).run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Expected type DATUM but found SELECTION:\nSELECTION ON table(' + tableName + ') in:\nr.db("' + dbName + '").table("' + tableName + '")\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    .orderBy(r.asc("foo")).add(1)\n    ^^^^^^^^^^^^^^^^^^^^^^       \n')
-    }
-  })
+    it( 'Test backtrace for r.db(dbName).table(tableName).orderBy(r.asc("foo")).add(1)', async () => {
+        try {
+            r.nextVarId = 1
+            await r.db( dbName ).table( tableName ).orderBy( r.asc( 'foo' ) ).add( 1 ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Expected type DATUM but found SELECTION:\nSELECTION ON table(' + tableName + ') in:\nr.db("' + dbName + '").table("' + tableName + '")\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    .orderBy(r.asc("foo")).add(1)\n    ^^^^^^^^^^^^^^^^^^^^^^       \n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 [ 0 ]
 
@@ -3305,17 +3589,18 @@ Expected type NUMBER but found STRING in:
 r.range("foo")
     ^^^^^
 */
-  it('Test backtrace for r.range("foo")', async () => {
-    try {
-      r.nextVarId = 1
-      await r.range('foo').run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Expected type NUMBER but found STRING in:\nr.range("foo")\n        ^^^^^ \n')
-    }
-  })
+    it( 'Test backtrace for r.range("foo")', async () => {
+        try {
+            r.nextVarId = 1
+            await r.range( 'foo' ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Expected type NUMBER but found STRING in:\nr.range("foo")\n        ^^^^^ \n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 [ 1 ]
 
@@ -3327,17 +3612,20 @@ r.range(1, 10).do(function(var_1) {
   return var_1.add(4)
 })
 */
-  it('Test backtrace for r.range(1,10).do(function(x) { return x.add(4) })', async () => {
-    try {
-      r.nextVarId = 1
-      await r.range(1, 10).do(function (x) { return x.add(4) }).run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Expected type DATUM but found SEQUENCE:\nVALUE SEQUENCE in:\nr.range(1, 10).do(function(var_1) {\n^^^^^^^^^^^^^^                     \n    return var_1.add(4)\n})\n')
-    }
-  })
+    it( 'Test backtrace for r.range(1,10).do(function(x) { return x.add(4) })', async () => {
+        try {
+            r.nextVarId = 1
+            await r.range( 1, 10 ).do( function( x ) {
+                return x.add( 4 )
+            } ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Expected type DATUM but found SEQUENCE:\nVALUE SEQUENCE in:\nr.range(1, 10).do(function(var_1) {\n^^^^^^^^^^^^^^                     \n    return var_1.add(4)\n})\n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 [ 1, 0 ]
 
@@ -3349,17 +3637,20 @@ r.range(1, 10).toJSON().do(function(var_1) {
   return var_1.add(4)
 })
 */
-  it('Test backtrace for r.range(1,10).toJSON().do(function(x) { return x.add(4) })', async () => {
-    try {
-      r.nextVarId = 1
-      await r.range(1, 10).toJSON().do(function (x) { return x.add(4) }).run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Expected type DATUM but found SEQUENCE:\nVALUE SEQUENCE in:\nr.range(1, 10).toJSON().do(function(var_1) {\n^^^^^^^^^^^^^^                              \n    return var_1.add(4)\n})\n')
-    }
-  })
+    it( 'Test backtrace for r.range(1,10).toJSON().do(function(x) { return x.add(4) })', async () => {
+        try {
+            r.nextVarId = 1
+            await r.range( 1, 10 ).toJSON().do( function( x ) {
+                return x.add( 4 )
+            } ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Expected type DATUM but found SEQUENCE:\nVALUE SEQUENCE in:\nr.range(1, 10).toJSON().do(function(var_1) {\n^^^^^^^^^^^^^^                              \n    return var_1.add(4)\n})\n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 [ 0, 1 ]
 
@@ -3371,17 +3662,20 @@ r.db("0bf896ead3b69f218ceff0de67476afe").table("a382350695a78865de1505c44c481223
          ^^^^^^^^^^^^
   })
 */
-  it('Test backtrace for r.db(dbName).table(tableName).config().do(function(x) { return x.add(4) })', async () => {
-    try {
-      r.nextVarId = 1
-      await r.db(dbName).table(tableName).config().do(function (x) { return x.add(4) }).run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Expected type NUMBER but found OBJECT in:\nr.db("' + dbName + '").table("' + tableName + '")\n    .config().do(function(var_1) {\n        return var_1.add(4)\n               ^^^^^^^^^^^^\n    })\n')
-    }
-  })
+    it( 'Test backtrace for r.db(dbName).table(tableName).config().do(function(x) { return x.add(4) })', async () => {
+        try {
+            r.nextVarId = 1
+            await r.db( dbName ).table( tableName ).config().do( function( x ) {
+                return x.add( 4 )
+            } ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Expected type NUMBER but found OBJECT in:\nr.db("' + dbName + '").table("' + tableName + '")\n    .config().do(function(var_1) {\n        return var_1.add(4)\n               ^^^^^^^^^^^^\n    })\n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 [ 0, 1 ]
 
@@ -3393,17 +3687,20 @@ r.db("c38ab783cfde80ea7ecf4db42eb942a0").table("7d81632cf83797a5b65a5f2b2adb2c8a
          ^^^^^^^^^^^^
   })
 */
-  it('Test backtrace for r.db(dbName).table(tableName).status().do(function(x) { return x.add(4) })', async () => {
-    try {
-      r.nextVarId = 1
-      await r.db(dbName).table(tableName).status().do(function (x) { return x.add(4) }).run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Expected type NUMBER but found OBJECT in:\nr.db("' + dbName + '").table("' + tableName + '")\n    .status().do(function(var_1) {\n        return var_1.add(4)\n               ^^^^^^^^^^^^\n    })\n')
-    }
-  })
+    it( 'Test backtrace for r.db(dbName).table(tableName).status().do(function(x) { return x.add(4) })', async () => {
+        try {
+            r.nextVarId = 1
+            await r.db( dbName ).table( tableName ).status().do( function( x ) {
+                return x.add( 4 )
+            } ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Expected type NUMBER but found OBJECT in:\nr.db("' + dbName + '").table("' + tableName + '")\n    .status().do(function(var_1) {\n        return var_1.add(4)\n               ^^^^^^^^^^^^\n    })\n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 [ 0, 1 ]
 
@@ -3415,17 +3712,20 @@ r.db("6c42577f50299d1e88bf57acd87ba5ea").table("031bd87d16ecf4b8d295dd6960fd4800
          ^^^^^^^^^^^^
   })
 */
-  it('Test backtrace for r.db(dbName).table(tableName).wait().do(function(x) { return x.add(4) })', async () => {
-    try {
-      r.nextVarId = 1
-      await r.db(dbName).table(tableName).wait().do(function (x) { return x.add(4) }).run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Expected type NUMBER but found OBJECT in:\nr.db("' + dbName + '").table("' + tableName + '")\n    .wait().do(function(var_1) {\n        return var_1.add(4)\n               ^^^^^^^^^^^^\n    })\n')
-    }
-  })
+    it( 'Test backtrace for r.db(dbName).table(tableName).wait().do(function(x) { return x.add(4) })', async () => {
+        try {
+            r.nextVarId = 1
+            await r.db( dbName ).table( tableName ).wait().do( function( x ) {
+                return x.add( 4 )
+            } ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Expected type NUMBER but found OBJECT in:\nr.db("' + dbName + '").table("' + tableName + '")\n    .wait().do(function(var_1) {\n        return var_1.add(4)\n               ^^^^^^^^^^^^\n    })\n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 [ 1 ]
 
@@ -3442,17 +3742,22 @@ r.db("997da59afc784220d0d5093ef2e698cf").table("dd9f7cdc9eb6c2dc21ef3d63d8fea221
     return var_1.add(4)
   })
 */
-  it('Test backtrace for r.db(dbName).table(tableName).reconfigure({ shards: 1 }).do(function(x) { return x.add(4) })', async () => {
-    try {
-      r.nextVarId = 1
-      await r.db(dbName).table(tableName).reconfigure({ shards: 1 }).do(function (x) { return x.add(4) }).run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Missing required argument `replicas` in:\nr.db("' + dbName + '").table("' + tableName + '")\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    .reconfigure({\n    ^^^^^^^^^^^^^^\n        shards: 1\n        ^^^^^^^^^\n    }).do(function(var_1) {\n    ^^                     \n        return var_1.add(4)\n    })\n')
-    }
-  })
+    it( 'Test backtrace for r.db(dbName).table(tableName).reconfigure({ shards: 1 }).do(function(x) { return x.add(4) })', async () => {
+        try {
+            r.nextVarId = 1
+            await r.db( dbName ).table( tableName ).reconfigure( {
+                shards: 1
+            } ).do( function( x ) {
+                return x.add( 4 )
+            } ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Missing required argument `replicas` in:\nr.db("' + dbName + '").table("' + tableName + '")\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    .reconfigure({\n    ^^^^^^^^^^^^^^\n        shards: 1\n        ^^^^^^^^^\n    }).do(function(var_1) {\n    ^^                     \n        return var_1.add(4)\n    })\n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 [ 0 ]
 
@@ -3464,17 +3769,20 @@ r.expr(1).add("foo").add(r.db("987367b7c251d403119132131f6ba8ae").table("90ff34f
     return var_1.add(4)
   }))
 */
-  it('Test backtrace for r.expr(1).add("foo").add(r.db(dbName).table(tableName).rebalance().do(function(x) { return x.add(4) }))', async () => {
-    try {
-      r.nextVarId = 1
-      await r.expr(1).add('foo').add(r.db(dbName).table(tableName).rebalance().do(function (x) { return x.add(4) })).run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Expected type NUMBER but found STRING in:\nr.expr(1).add("foo").add(r.db("' + dbName + '").table("' + tableName + '")\n^^^^^^^^^^^^^^^^^^^^                                                                                       \n    .rebalance().do(function(var_1) {\n        return var_1.add(4)\n    }))\n')
-    }
-  })
+    it( 'Test backtrace for r.expr(1).add("foo").add(r.db(dbName).table(tableName).rebalance().do(function(x) { return x.add(4) }))', async () => {
+        try {
+            r.nextVarId = 1
+            await r.expr( 1 ).add( 'foo' ).add( r.db( dbName ).table( tableName ).rebalance().do( function( x ) {
+                return x.add( 4 )
+            } ) ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Expected type NUMBER but found STRING in:\nr.expr(1).add("foo").add(r.db("' + dbName + '").table("' + tableName + '")\n^^^^^^^^^^^^^^^^^^^^                                                                                       \n    .rebalance().do(function(var_1) {\n        return var_1.add(4)\n    }))\n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 []
 
@@ -3487,17 +3795,20 @@ r.map(r.expr([1, 2, 3]), [1, 2, 3], function(var_1) {
 })
 ^^
 */
-  it('Test backtrace for r.map([1,2,3], [1,2,3], function(var_1) { return var_1("bah").add(3) })', async () => {
-    try {
-      r.nextVarId = 1
-      await r.map([1, 2, 3], [1, 2, 3], function (var_1) { return var_1('bah').add(3) }).run() // eslint-disable-line camelcase
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'The function passed to `map` expects 1 argument, but 2 sequences were found in:\nr.map(r.expr([1, 2, 3]), [1, 2, 3], function(var_1) {\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    return var_1("bah").add(3)\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^\n})\n^^\n')
-    }
-  })
+    it( 'Test backtrace for r.map([1,2,3], [1,2,3], function(var_1) { return var_1("bah").add(3) })', async () => {
+        try {
+            r.nextVarId = 1
+            await r.map( [ 1, 2, 3 ], [ 1, 2, 3 ], function( var_1 ) {
+                return var_1( 'bah' ).add( 3 )
+            } ).run() // eslint-disable-line camelcase
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'The function passed to `map` expects 1 argument, but 2 sequences were found in:\nr.map(r.expr([1, 2, 3]), [1, 2, 3], function(var_1) {\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    return var_1("bah").add(3)\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^\n})\n^^\n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 [ 2, 1, 0, 0 ]
 
@@ -3508,17 +3819,20 @@ r.map(r.expr([1, 2, 3]), [1, 2, 3], function(var_1, var_2) {
        ^^^^^
 })
 */
-  it('Test backtrace for r.map([1,2,3], [1,2,3], function(var_1, var_2) { return var_1("bah").add(3) })', async () => {
-    try {
-      r.nextVarId = 1
-      await r.map([1, 2, 3], [1, 2, 3], function (var_1, var_2) { return var_1('bah').add(3) }).run() // eslint-disable-line camelcase
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Cannot perform bracket on a non-object non-sequence `1` in:\nr.map(r.expr([1, 2, 3]), [1, 2, 3], function(var_1, var_2) {\n    return var_1("bah").add(3)\n           ^^^^^              \n})\n')
-    }
-  })
+    it( 'Test backtrace for r.map([1,2,3], [1,2,3], function(var_1, var_2) { return var_1("bah").add(3) })', async () => {
+        try {
+            r.nextVarId = 1
+            await r.map( [ 1, 2, 3 ], [ 1, 2, 3 ], function( var_1, var_2 ) {
+                return var_1( 'bah' ).add( 3 )
+            } ).run() // eslint-disable-line camelcase
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Cannot perform bracket on a non-object non-sequence `1` in:\nr.map(r.expr([1, 2, 3]), [1, 2, 3], function(var_1, var_2) {\n    return var_1("bah").add(3)\n           ^^^^^              \n})\n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 [ 0, 0 ]
 
@@ -3527,17 +3841,18 @@ Expected type STRING but found ARRAY in:
 r.expr([1, 2, 3]).split(",", 3).add(3)
 ^^^^^^^^^^^^^^^^^
 */
-  it('Test backtrace for r.expr([1,2,3]).split(",", 3).add(3)', async () => {
-    try {
-      r.nextVarId = 1
-      await r.expr([1, 2, 3]).split(',', 3).add(3).run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Expected type STRING but found ARRAY in:\nr.expr([1, 2, 3]).split(",", 3).add(3)\n^^^^^^^^^^^^^^^^^                     \n')
-    }
-  })
+    it( 'Test backtrace for r.expr([1,2,3]).split(",", 3).add(3)', async () => {
+        try {
+            r.nextVarId = 1
+            await r.expr( [ 1, 2, 3 ] ).split( ',', 3 ).add( 3 ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Expected type STRING but found ARRAY in:\nr.expr([1, 2, 3]).split(",", 3).add(3)\n^^^^^^^^^^^^^^^^^                     \n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 []
 
@@ -3554,17 +3869,22 @@ r.expr({}).merge({
 }).add(2)
 ^^^^^^^^^
 */
-  it('Test backtrace for r.expr({}).merge({a: r.literal({foo: "bar"})}).add(2)', async () => {
-    try {
-      r.nextVarId = 1
-      await r.expr({}).merge({a: r.literal({foo: 'bar'})}).add(2).run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Expected type NUMBER but found OBJECT in:\nr.expr({}).merge({\n^^^^^^^^^^^^^^^^^^\n    a: r.literal({\n    ^^^^^^^^^^^^^^\n        foo: "bar"\n        ^^^^^^^^^^\n    })\n    ^^\n}).add(2)\n^^^^^^^^^\n')
-    }
-  })
+    it( 'Test backtrace for r.expr({}).merge({a: r.literal({foo: "bar"})}).add(2)', async () => {
+        try {
+            r.nextVarId = 1
+            await r.expr( {} ).merge( {
+                a: r.literal( {
+                    foo: 'bar'
+                } )
+            } ).add( 2 ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Expected type NUMBER but found OBJECT in:\nr.expr({}).merge({\n^^^^^^^^^^^^^^^^^^\n    a: r.literal({\n    ^^^^^^^^^^^^^^\n        foo: "bar"\n        ^^^^^^^^^^\n    })\n    ^^\n}).add(2)\n^^^^^^^^^\n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 []
 
@@ -3573,17 +3893,18 @@ Expected type NUMBER but found ARRAY in:
 r.monday.add([1])
 ^^^^^^^^^^^^^^^^^
 */
-  it('Test backtrace for r.monday.add([1])', async () => {
-    try {
-      r.nextVarId = 1
-      await r.monday.add([1]).run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Expected type NUMBER but found ARRAY in:\nr.monday.add([1])\n^^^^^^^^^^^^^^^^^\n')
-    }
-  })
+    it( 'Test backtrace for r.monday.add([1])', async () => {
+        try {
+            r.nextVarId = 1
+            await r.monday.add( [ 1 ] ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Expected type NUMBER but found ARRAY in:\nr.monday.add([1])\n^^^^^^^^^^^^^^^^^\n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 []
 
@@ -3592,17 +3913,18 @@ Expected type NUMBER but found ARRAY in:
 r.november.add([1])
 ^^^^^^^^^^^^^^^^^^^
 */
-  it('Test backtrace for r.november.add([1])', async () => {
-    try {
-      r.nextVarId = 1
-      await r.november.add([1]).run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Expected type NUMBER but found ARRAY in:\nr.november.add([1])\n^^^^^^^^^^^^^^^^^^^\n')
-    }
-  })
+    it( 'Test backtrace for r.november.add([1])', async () => {
+        try {
+            r.nextVarId = 1
+            await r.november.add( [ 1 ] ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Expected type NUMBER but found ARRAY in:\nr.november.add([1])\n^^^^^^^^^^^^^^^^^^^\n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 []
 
@@ -3615,17 +3937,20 @@ r.expr({
 }).add([1])
 ^^^^^^^^^^^
 */
-  it('Test backtrace for r.expr({a: r.wednesday}).add([1])', async () => {
-    try {
-      r.nextVarId = 1
-      await r.expr({a: r.wednesday}).add([1]).run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Expected type NUMBER but found OBJECT in:\nr.expr({\n^^^^^^^^\n    a: r.wednesday\n    ^^^^^^^^^^^^^^\n}).add([1])\n^^^^^^^^^^^\n')
-    }
-  })
+    it( 'Test backtrace for r.expr({a: r.wednesday}).add([1])', async () => {
+        try {
+            r.nextVarId = 1
+            await r.expr( {
+                a: r.wednesday
+            } ).add( [ 1 ] ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Expected type NUMBER but found OBJECT in:\nr.expr({\n^^^^^^^^\n    a: r.wednesday\n    ^^^^^^^^^^^^^^\n}).add([1])\n^^^^^^^^^^^\n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 [ 0 ]
 
@@ -3641,17 +3966,20 @@ r.db("d2292d5a5fb3f4780426609087b88fa4").table("0efb72285d551009ac6f2387173b3443
   }).add(1)
   ^^
 */
-  it('Test backtrace for r.db(dbName).table(tableName).between(r.minval, r.maxval, {index: "foo"}).add(1)', async () => {
-    try {
-      r.nextVarId = 1
-      await r.db(dbName).table(tableName).between(r.minval, r.maxval, {index: 'foo'}).add(1).run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Expected type DATUM but found TABLE_SLICE:\nSELECTION ON table(' + tableName + ') in:\nr.db("' + dbName + '").table("' + tableName + '")\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    .between(r.minval, r.maxval, {\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n        index: "foo"\n        ^^^^^^^^^^^^\n    }).add(1)\n    ^^       \n')
-    }
-  })
+    it( 'Test backtrace for r.db(dbName).table(tableName).between(r.minval, r.maxval, {index: "foo"}).add(1)', async () => {
+        try {
+            r.nextVarId = 1
+            await r.db( dbName ).table( tableName ).between( r.minval, r.maxval, {
+                index: 'foo'
+            } ).add( 1 ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Expected type DATUM but found TABLE_SLICE:\nSELECTION ON table(' + tableName + ') in:\nr.db("' + dbName + '").table("' + tableName + '")\n^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n    .between(r.minval, r.maxval, {\n    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n        index: "foo"\n        ^^^^^^^^^^^^\n    }).add(1)\n    ^^       \n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 [ 0 ]
 
@@ -3662,17 +3990,20 @@ r.expr(1).add("bar").add(r.ISO8601("dadsa", {
   defaultTimezone: "dsada"
 }))
 */
-  it('Test backtrace for r.expr(1).add("bar").add(r.ISO8601("dadsa",{defaultTimezone: "dsada"}))', async () => {
-    try {
-      r.nextVarId = 1
-      await r.expr(1).add('bar').add(r.ISO8601('dadsa', {defaultTimezone: 'dsada'})).run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Expected type NUMBER but found STRING in:\nr.expr(1).add("bar").add(r.ISO8601("dadsa", {\n^^^^^^^^^^^^^^^^^^^^                         \n    defaultTimezone: "dsada"\n}))\n')
-    }
-  })
+    it( 'Test backtrace for r.expr(1).add("bar").add(r.ISO8601("dadsa",{defaultTimezone: "dsada"}))', async () => {
+        try {
+            r.nextVarId = 1
+            await r.expr( 1 ).add( 'bar' ).add( r.ISO8601( 'dadsa', {
+                defaultTimezone: 'dsada'
+            } ) ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Expected type NUMBER but found STRING in:\nr.expr(1).add("bar").add(r.ISO8601("dadsa", {\n^^^^^^^^^^^^^^^^^^^^                         \n    defaultTimezone: "dsada"\n}))\n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 [ 1, 'bar' ]
 
@@ -3686,17 +4017,23 @@ r.expr({
          ^^^^^^^^^^^^^^^^^^^^
 })
 */
-  it('Test backtrace for r.expr({foo: "bar"}).merge({foo: r.literal(), bar: r.expr("lol").add(1)})', async () => {
-    try {
-      r.nextVarId = 1
-      await r.expr({foo: 'bar'}).merge({foo: r.literal(), bar: r.expr('lol').add(1)}).run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Expected type STRING but found NUMBER in:\nr.expr({\n    foo: "bar"\n}).merge({\n    foo: r.literal(),\n    bar: r.expr("lol").add(1)\n         ^^^^^^^^^^^^^^^^^^^^\n})\n')
-    }
-  })
+    it( 'Test backtrace for r.expr({foo: "bar"}).merge({foo: r.literal(), bar: r.expr("lol").add(1)})', async () => {
+        try {
+            r.nextVarId = 1
+            await r.expr( {
+                foo: 'bar'
+            } ).merge( {
+                foo: r.literal(),
+                bar: r.expr( 'lol' ).add( 1 )
+            } ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Expected type STRING but found NUMBER in:\nr.expr({\n    foo: "bar"\n}).merge({\n    foo: r.literal(),\n    bar: r.expr("lol").add(1)\n         ^^^^^^^^^^^^^^^^^^^^\n})\n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 [ 0 ]
 
@@ -3705,34 +4042,36 @@ Expected type NUMBER but found STRING in:
 r.expr("hello").floor()
 ^^^^^^^^^^^^^^^
 */
-  it('Test backtrace for r.floor("hello")', async () => {
-    try {
-      r.nextVarId = 1
-      await r.floor('hello').run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Expected type NUMBER but found STRING in:\nr.expr("hello").floor()\n^^^^^^^^^^^^^^^        \n')
-    }
-  })
+    it( 'Test backtrace for r.floor("hello")', async () => {
+        try {
+            r.nextVarId = 1
+            await r.floor( 'hello' ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Expected type NUMBER but found STRING in:\nr.expr("hello").floor()\n^^^^^^^^^^^^^^^        \n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 undefined
 
 Error:
 `r.floor` takes 1 argument, 0 provided.
 */
-  it('Test backtrace for r.floor()', async () => {
-    try {
-      r.nextVarId = 1
-      await r.floor().run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === '`r.floor` takes 1 argument, 0 provided.')
-    }
-  })
+    it( 'Test backtrace for r.floor()', async () => {
+        try {
+            r.nextVarId = 1
+            await r.floor().run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === '`r.floor` takes 1 argument, 0 provided.' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 [ 0 ]
 
@@ -3741,17 +4080,18 @@ Expected type NUMBER but found STRING in:
 r.expr("hello").round()
 ^^^^^^^^^^^^^^^
 */
-  it('Test backtrace for r.round("hello")', async () => {
-    try {
-      r.nextVarId = 1
-      await r.round('hello').run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Expected type NUMBER but found STRING in:\nr.expr("hello").round()\n^^^^^^^^^^^^^^^        \n')
-    }
-  })
+    it( 'Test backtrace for r.round("hello")', async () => {
+        try {
+            r.nextVarId = 1
+            await r.round( 'hello' ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Expected type NUMBER but found STRING in:\nr.expr("hello").round()\n^^^^^^^^^^^^^^^        \n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 [ 0 ]
 
@@ -3760,17 +4100,18 @@ Expected type NUMBER but found STRING in:
 r.expr("hello").ceil()
 ^^^^^^^^^^^^^^^
 */
-  it('Test backtrace for r.ceil("hello")', async () => {
-    try {
-      r.nextVarId = 1
-      await r.ceil('hello').run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Expected type NUMBER but found STRING in:\nr.expr("hello").ceil()\n^^^^^^^^^^^^^^^       \n')
-    }
-  })
+    it( 'Test backtrace for r.ceil("hello")', async () => {
+        try {
+            r.nextVarId = 1
+            await r.ceil( 'hello' ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Expected type NUMBER but found STRING in:\nr.expr("hello").ceil()\n^^^^^^^^^^^^^^^       \n' )
+        }
+    } )
 
-  /*
+    /*
 Frames:
 []
 
@@ -3787,13 +4128,18 @@ r.expr({
 }).values().add(2)
 ^^^^^^^^^^^^^^^^^^
 */
-  it('Test backtrace for r.expr({a:1, b:2, c: 3}).values().add(2)', async () => {
-    try {
-      r.nextVarId = 1
-      await r.expr({a: 1, b: 2, c: 3}).values().add(2).run()
-      assert.fail('should throw')
-    } catch (e) {
-      assert(e.message === 'Expected type ARRAY but found NUMBER in:\nr.expr({\n^^^^^^^^\n    a: 1,\n    ^^^^^\n    b: 2,\n    ^^^^^\n    c: 3\n    ^^^^\n}).values().add(2)\n^^^^^^^^^^^^^^^^^^\n')
-    }
-  })
-})
+    it( 'Test backtrace for r.expr({a:1, b:2, c: 3}).values().add(2)', async () => {
+        try {
+            r.nextVarId = 1
+            await r.expr( {
+                a: 1,
+                b: 2,
+                c: 3
+            } ).values().add( 2 ).run()
+            assert.fail( 'should throw' )
+        }
+        catch ( e ) {
+            assert( e.message === 'Expected type ARRAY but found NUMBER in:\nr.expr({\n^^^^^^^^\n    a: 1,\n    ^^^^^\n    b: 2,\n    ^^^^^\n    c: 3\n    ^^^^\n}).values().add(2)\n^^^^^^^^^^^^^^^^^^\n' )
+        }
+    } )
+} )
