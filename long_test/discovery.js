@@ -399,7 +399,7 @@ It( 'Test that pools are created and identified with discovery: true', function*
         // These queries take 2 seconds to fail
         r.js( 'while (true) {}', {
             timeout: 2
-        } ).run().then( function() {} ).error( function() {} );
+        } ).run().then( function() {} ).catch( function() {} );
     }
     for ( var i = 0; i < r.getPoolMaster()._healthyPools.length; i++ ) {
         assert.equal( r.getPool( i ).getLength(), Math.ceil( MAX / ( NUM_SERVERS ) ) );

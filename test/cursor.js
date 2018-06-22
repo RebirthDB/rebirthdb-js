@@ -482,7 +482,7 @@ describe( 'cursor', () => {
                 if ( counter >= 2 ) {
                     assert( typeof change.old_offset === 'number' )
 
-                    feed.close().then( resolve ).error( reject )
+                    feed.close().then( resolve ).catch( reject )
                 }
                 counter++
             } )
@@ -509,7 +509,7 @@ describe( 'cursor', () => {
                 if ( error ) reject( error )
                 assert( typeof change.type === 'string' )
                 if ( counter > 0 ) {
-                    feed.close().then( resolve ).error( reject )
+                    feed.close().then( resolve ).catch( reject )
                 }
                 counter++
             } )
@@ -531,7 +531,7 @@ describe( 'cursor', () => {
                 feed.next().then( assert )
                 i++
                 if ( i === smallNumDocs ) {
-                    return feed.close().then( resolve ).error( reject )
+                    return feed.close().then( resolve ).catch( reject )
                 }
             }
         } )
@@ -600,7 +600,7 @@ describe( 'cursor', () => {
             feed.on( 'data', function() {
                 i++
                 if ( i === smallNumDocs ) {
-                    feed.close().then( resolve ).error( reject )
+                    feed.close().then( resolve ).catch( reject )
                 }
             } )
             feed.on( 'error', reject )
@@ -676,7 +676,7 @@ describe( 'cursor', () => {
                 }
                 if ( count === 1 ) {
                     setTimeout( function() {
-                        feed.close().then( resolve ).error( reject )
+                        feed.close().then( resolve ).catch( reject )
                     }, 100 )
                 }
             } )
@@ -701,7 +701,7 @@ describe( 'cursor', () => {
                 }
                 if ( count === 2 ) {
                     setTimeout( function() {
-                        feed.close().then( resolve ).error( reject )
+                        feed.close().then( resolve ).catch( reject )
                     }, 100 )
                 }
             } )
@@ -720,7 +720,7 @@ describe( 'cursor', () => {
             feed.each( function( err, result ) {
                 if ( err ) reject( err )
                 if ( ( result.new_val != null ) && ( result.new_val.id === 1 ) ) {
-                    feed.close().then( resolve ).error( reject )
+                    feed.close().then( resolve ).catch( reject )
                 }
             } )
         } )
@@ -742,7 +742,7 @@ describe( 'cursor', () => {
                 }
                 if ( count === 1 ) {
                     setTimeout( function() {
-                        feed.close().then( resolve ).error( reject )
+                        feed.close().then( resolve ).catch( reject )
                     }, 100 )
                 }
             } )
@@ -767,7 +767,7 @@ describe( 'cursor', () => {
                 if ( err ) reject( err )
                 i++
                 if ( i === 10 ) {
-                    feed.close().then( resolve ).error( reject )
+                    feed.close().then( resolve ).catch( reject )
                 }
             } )
         } )

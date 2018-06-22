@@ -378,7 +378,7 @@ describe( 'stream', () => {
                             done( new Error( 'All the data should have been streamed' ) )
                         }
                         return r1.db( dbName ).table( dumpTable ).delete()
-                    } ).then( () => r1.getPool().drain() ).then( done ).error( done )
+                    } ).then( () => r1.getPool().drain() ).then( done ).catch( done )
             } )
     } )
 
@@ -406,7 +406,7 @@ describe( 'stream', () => {
                         done( new Error( 'All the data should have been streamed' ) )
                     }
                     return r1.db( dbName ).table( dumpTable ).delete()
-                } ).then( () => r1.getPool().drain() ).then( done ).error( done )
+                } ).then( () => r1.getPool().drain() ).then( done ).catch( done )
             } )
     } )
 
@@ -434,7 +434,7 @@ describe( 'stream', () => {
                         done( new Error( 'All the data should have been streamed' ) )
                     }
                     return r1.db( dbName ).table( dumpTable ).delete()
-                } ).then( () => r1.getPool().drain() ).then( done ).error( done )
+                } ).then( () => r1.getPool().drain() ).then( done ).catch( done )
             } )
     } )
 
@@ -462,7 +462,7 @@ describe( 'stream', () => {
                         done( new Error( 'All the data should have been streamed' ) )
                     }
                     return r1.db( dbName ).table( dumpTable ).delete()
-                } ).then( () => r1.getPool( 0 ).drain() ).then( done ).error( done )
+                } ).then( () => r1.getPool( 0 ).drain() ).then( done ).catch( done )
             } )
     } )
 
@@ -502,7 +502,7 @@ describe( 'stream', () => {
                     foo: 3
                 } )
                 return r1.db( dbName ).table( dumpTable ).delete()
-            } ).then( () => r1.getPool( 0 ).drain() ).then( done ).error( done )
+            } ).then( () => r1.getPool( 0 ).drain() ).then( done ).catch( done )
         } )
     } )
 
@@ -551,7 +551,7 @@ describe( 'stream', () => {
                 } ).then( function( result ) {
                     assert( result, numDocs * 2 )
                     return r.db( dbName ).table( dumpTable ).delete()
-                } ).then( () => r.getPool().drain() ).then( done ).error( done )
+                } ).then( () => r.getPool().drain() ).then( done ).catch( done )
             } )
     } )
 

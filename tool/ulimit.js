@@ -30,7 +30,7 @@ var r = require( '../lib/' )( {
             return Promise.all( promises );
         } ).then( function() {
             console.log( "test done" );
-        } ).error( function( err ) {
+        } ).catch( function( err ) {
             console.log( "Error" );
             console.log( err );
         } );
@@ -49,7 +49,7 @@ var r = require( '../lib/' )( {
             return Promise.all( promises );
         } ).then( function() {
             console.log( "test done" );
-        } ).error( function( err ) {
+        } ).catch( function( err ) {
             console.log( "Error" );
             console.log( err );
         } );

@@ -1,9 +1,5 @@
 const {it} = require('mocha')
 
-Promise.coroutine.addYieldHandler(function (yieldedValue) {
-  if (Array.isArray(yieldedValue)) return Promise.all(yieldedValue)
-})
-
 function s4 () {
   return Math.floor((1 + Math.random()) * 0x10000).toString(16).substring(1)
 }
