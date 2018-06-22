@@ -33,8 +33,9 @@
     "url": "https://github.com/RebirthDB/rebirthdb-js/issues"
   },
   "dependencies": {
-    "luxon": "^1.2.1",
-    "iterall": "^1.2.2"
+    "generic-pool": "^3.4.2",
+    "iterall": "^1.2.2",
+    "luxon": "^1.2.1"
   },
   "devDependencies": {
     "browserify": "^16.2.2",

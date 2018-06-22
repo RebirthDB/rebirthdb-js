@@ -471,7 +471,7 @@ describe( 'cursor', () => {
         let counter = 0
 
         const promise = new Promise( ( resolve, reject ) => {
-            feed.each( function( error, change ) {
+            feed.each( ( error, change ) => {
                 if ( error ) reject( error )
                 assert( typeof change.new_offset === 'number' )
                 if ( counter >= 2 ) {
@@ -480,7 +480,7 @@ describe( 'cursor', () => {
                     feed.close().then( resolve ).catch( reject )
                 }
                 counter++
-            } )
+            } );
         } )
 
         await r.db( dbName ).table( tableName ).insert( {
