@@ -3,13 +3,7 @@ const config = require( './config.js' )
 const rebirthdb = require( path.join( __dirname, '/../lib' ) )
 const assert = require( 'assert' )
 
-const {
-    before,
-    after,
-    afterEach,
-    describe,
-    it
-} = require( 'mocha' )
+const { before, after, afterEach, describe, it } = require( 'mocha' )
 
 describe( 'datum', function() {
     let r

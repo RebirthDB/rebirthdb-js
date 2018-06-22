@@ -1,10 +1,7 @@
 const path = require( 'path' )
 const Dequeue = require( path.join( __dirname, '/../lib/dequeue.js' ) )
 const assert = require( 'assert' )
-const {
-    describe,
-    it
-} = require( 'mocha' )
+const { describe, it } = require( 'mocha' )
 
 describe( 'Dequeue', function() {
     const size = 20

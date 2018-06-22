@@ -4,12 +4,8 @@ const rebirthdb = require( path.join( __dirname, '/../lib' ) )
 const util = require( path.join( __dirname, '/util/common.js' ) )
 const assert = require( 'assert' )
 const uuid = util.uuid
-const {
-    before,
-    after,
-    describe,
-    it
-} = require( 'mocha' )
+const { before, after, describe, it } = require( 'mocha' )
+
 
 describe( 'control structures', () => {
     let r

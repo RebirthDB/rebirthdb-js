@@ -8,12 +8,7 @@ const util = require( path.join( __dirname, '/util/common.js' ) )
 const assert = require( 'assert' )
 const uuid = util.uuid
 const net = require( 'net' )
-const {
-    beforeEach,
-    afterEach,
-    describe,
-    it
-} = require( 'mocha' )
+const { beforeEach, afterEach, describe, it } = require( 'mocha' )
 
 describe( 'accessing-reql', function() {
     let connection // global connection

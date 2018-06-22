@@ -2,18 +2,9 @@ const path = require( 'path' )
 const config = require( './config.js' )
 const rebirthdb = require( path.join( __dirname, '/../lib' ) )
 const assert = require( 'assert' )
-const {
-    uuid
-} = require( path.join( __dirname, '/util/common.js' ) )
-const {
-    before,
-    after,
-    describe,
-    it
-} = require( 'mocha' )
-const {
-    Readable
-} = require( 'stream' )
+const { uuid } = require( path.join( __dirname, '/util/common.js' ) )
+const { before, after, describe, it } = require( 'mocha' )
+const { Readable } = require( 'stream' )
 
 describe( 'writable streams', () => {
     let r, dbName, tableName, dumpTable

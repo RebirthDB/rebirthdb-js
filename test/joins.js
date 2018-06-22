@@ -2,15 +2,8 @@ const path = require( 'path' )
 const config = require( './config.js' )
 const rebirthdb = require( path.join( __dirname, '/../lib' ) )
 const assert = require( 'assert' )
-const {
-    uuid
-} = require( path.join( __dirname, '/util/common.js' ) )
-const {
-    before,
-    after,
-    describe,
-    it
-} = require( 'mocha' )
+const { uuid } = require( path.join( __dirname, '/util/common.js' ) )
+const { before, after, describe, it } = require( 'mocha' )
 
 describe( 'joins', () => {
     let r, dbName, tableName, pks

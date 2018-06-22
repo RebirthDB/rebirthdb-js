@@ -1,10 +1,7 @@
 const path = require( 'path' )
 const LinkedList = require( path.join( __dirname, '/../lib/linked_list.js' ) )
 const assert = require( 'assert' )
-const {
-    describe,
-    it
-} = require( 'mocha' )
+const { describe, it } = require( 'mocha' )
 
 describe( 'Linked list', function() {
     const size = 20

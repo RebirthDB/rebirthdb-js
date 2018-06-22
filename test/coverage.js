@@ -2,10 +2,7 @@ const path = require( 'path' )
 const protodef = require( path.join( __dirname, '/../lib/protodef.js' ) )
 const fs = require( 'fs' )
 const keys = Object.keys( protodef.Term.TermType )
-const {
-    describe,
-    it
-} = require( 'mocha' )
+const { describe, it } = require( 'mocha' )
 const assert = require( 'assert' )
 
 describe( 'coverage', () => {

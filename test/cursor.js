@@ -6,12 +6,7 @@ const uuid = util.uuid
 const assert = require( 'assert' )
 
 const iterall = require( 'iterall' )
-const {
-    before,
-    after,
-    describe,
-    it
-} = require( 'mocha' )
+const { before, after, describe, it } = require( 'mocha' )
 
 describe( 'cursor', () => {
     let r, connection, dbName, tableName, tableName2

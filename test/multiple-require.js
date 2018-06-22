@@ -1,12 +1,7 @@
 const path = require( 'path' )
 const config = require( path.join( __dirname, '/config.js' ) )
 const assert = require( 'assert' )
-const {
-    before,
-    after,
-    describe,
-    it
-} = require( 'mocha' )
+const { before, after, describe, it } = require( 'mocha' )
 
 describe( 'multiple require', () => {
     let r1, r2
