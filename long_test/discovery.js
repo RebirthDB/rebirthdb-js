@@ -3,7 +3,6 @@ var longConfig = require( __dirname + '/config.js' );
 
 var assert = require( 'assert' );
 var util = require( __dirname + '/../test/util/common.js' );
-var uuid = util.uuid;
 var It = util.It;
 
 var spawn = require( 'child_process' ).spawn

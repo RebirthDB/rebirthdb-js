@@ -91,7 +91,7 @@ describe( 'pool legacy', () => {
         const {
             availableLength,
             length
-        } = await new Promise( ( resolve, reject ) => {
+        } = await new Promise( resolve => {
             setTimeout( function() {
                 resolve( {
                     availableLength: r.getPool().getAvailableLength(),
@@ -193,7 +193,7 @@ describe( 'pool legacy', () => {
             max: 2,
             silent: true
         } )
-        await new Promise( function( resolve, reject ) {
+        await new Promise( resolve => {
             setTimeout( resolve, 1000 )
         } )
         try {
@@ -259,7 +259,7 @@ describe( 'pool legacy', () => {
             timeoutError: 100
         } )
         const pool = r.getPool()
-        await new Promise( function( resolve, reject ) {
+        await new Promise( resolve => {
             setTimeout( resolve, 150 )
         } )
         pool.drain()
@@ -289,7 +289,7 @@ describe( 'pool legacy', () => {
             assert.equal( e.message, 'Client is buggy (failed to deserialize protobuf)' )
 
             // We expect the connection that errored to get closed in the next second
-            await new Promise( ( resolve, reject ) => {
+            await new Promise( resolve => {
                 setTimeout( function() {
                     assert.equal( r.getPool().getAvailableLength(), options.max - 1 )
                     assert.equal( r.getPool().getLength(), options.max - 1 )

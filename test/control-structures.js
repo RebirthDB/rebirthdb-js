@@ -32,7 +32,7 @@ describe( 'control structures', () => {
     } )
 
     it( '`r.do` should work', async () => {
-        let result = await r.do( 1, 2, function( a, b ) {
+        let result = await r.do( 1, 2, function( a ) {
             return a
         } ).run()
         assert.equal( result, 1 )

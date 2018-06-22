@@ -38,10 +38,10 @@ describe( 'multiple require', () => {
     } )
 
     it( 'Multiple import should not share the same `nextVarId`', function() {
-        r1.expr( 1 ).do( function( a, b, c ) {
+        r1.expr( 1 ).do( function() {
             return 1
         } )
-        r2.expr( 2 ).do( function( d ) {
+        r2.expr( 2 ).do( function() {
             return 2
         } )
         assert.equal( r1.nextVarId, 4 )

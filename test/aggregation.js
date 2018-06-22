@@ -55,7 +55,7 @@ describe( 'aggregation', () => {
     } )
 
     it( '`fold` should work -- with emit', async () => {
-        const result = await r.expr( [ 'foo', 'bar', 'buzz', 'hello', 'world' ] ).fold( 0, function( acc, row ) {
+        const result = await r.expr( [ 'foo', 'bar', 'buzz', 'hello', 'world' ] ).fold( 0, function( acc ) {
             return acc.add( 1 )
         }, {
             emit: function( oldAcc, element, newAcc ) {
@@ -66,7 +66,7 @@ describe( 'aggregation', () => {
     } )
 
     it( '`fold` should work -- with emit and finalEmit', async () => {
-        const result = await r.expr( [ 'foo', 'bar', 'buzz', 'hello', 'world' ] ).fold( 0, function( acc, row ) {
+        const result = await r.expr( [ 'foo', 'bar', 'buzz', 'hello', 'world' ] ).fold( 0, function( acc ) {
             return acc.add( 1 )
         }, {
             emit: function( oldAcc, element, newAcc ) {

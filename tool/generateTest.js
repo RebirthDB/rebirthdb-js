@@ -2,10 +2,6 @@ var Promise = require( 'bluebird' );
 var config = require( __dirname + '/../test/config.js' );
 var r = require( __dirname + '/../lib' )( config );
 var util = require( __dirname + '/../test/util/common.js' );
-var assert = require( 'assert' );
-
-
-
 
 var dbName = util.uuid()
 var tableName = util.uuid()
@@ -18,7 +14,7 @@ Promise.coroutine( function*() {
         yield r.dbCreate( dbName ).run();
         yield r.db( dbName ).tableCreate( tableName ).run();
 
-        var result = yield eval( query ).run();
+        yield eval( query ).run();
         throw new Error( "Should have thrown an error" );
     }
     catch ( e ) {

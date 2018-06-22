@@ -5,7 +5,7 @@ var tableName = 'test' + Math.floor( Math.random() * 1000 );
 var size = 30000;
 
 console.log( 'Using table', tableName );
-r.tableCreate( tableName ).run().then( function( result ) {
+r.tableCreate( tableName ).run().then( function() {
     var table = r.table( tableName ).toStream( {
         writable: true
     } );

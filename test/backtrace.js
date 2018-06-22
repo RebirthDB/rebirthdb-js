@@ -2528,7 +2528,7 @@ r.table("foo").add(1).add(1).add("hello-super-long-string").add("another-long-st
     it( 'Test backtrace for r.table("foo").add(1).add(1).add("hello-super-long-string").add("another-long-string").add("one-last-string").map( function(doc) { return r.expr([1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16]).map(function(test) { return test("b").add("hello-super-long-string").add("another-long-string").add("one-last-string").add("hello-super-long-string").add("another-long-string").add("one-last-string").add("hello-super-long-string").add("another-long-string").add("one-last-string").add("hello-super-long-string").add("another-long-string").add("one-last-string").add("hello-super-long-string").add("another-long-string").add("one-last-string").mul(test("b")).merge({ firstName: "xxxxxx", lastName: "yyyy", email: "xxxxx@yyyy.com", phone: "xxx-xxx-xxxx" }); }).add(2).map(function(doc) { return doc.add("hello-super-long-string").add("another-long-string").add("one-last-string").add("hello-super-long-string").add("another-long-string").add("one-last-string").add("hello-super-long-string").add("another-long-string").add("one-last-string").add("hello-super-long-string").add("another-long-string").add("one-last-string").add("hello-super-long-string").add("another-long-string").add("one-last-string") }); })', async () => {
         try {
             r.nextVarId = 1
-            await r.table( 'foo' ).add( 1 ).add( 1 ).add( 'hello-super-long-string' ).add( 'another-long-string' ).add( 'one-last-string' ).map( function( doc ) {
+            await r.table( 'foo' ).add( 1 ).add( 1 ).add( 'hello-super-long-string' ).add( 'another-long-string' ).add( 'one-last-string' ).map( function() {
                 return r.expr( [ 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16 ] ).map( function( test ) {
                     return test( 'b' ).add( 'hello-super-long-string' ).add( 'another-long-string' ).add( 'one-last-string' ).add( 'hello-super-long-string' ).add( 'another-long-string' ).add( 'one-last-string' ).add( 'hello-super-long-string' ).add( 'another-long-string' ).add( 'one-last-string' ).add( 'hello-super-long-string' ).add( 'another-long-string' ).add( 'one-last-string' ).add( 'hello-super-long-string' ).add( 'another-long-string' ).add( 'one-last-string' ).mul( test( 'b' ) ).merge( {
                         firstName: 'xxxxxx',
@@ -2964,7 +2964,7 @@ r.expr(1).do(function(var_1) {
     it( 'Test backtrace for r.expr(1).do(function(v) { return r.object(1, 2) })', async () => {
         try {
             r.nextVarId = 1
-            await r.expr( 1 ).do( function( v ) {
+            await r.expr( 1 ).do( function() {
                 return r.object( 1, 2 )
             } ).run()
             assert.fail( 'should throw' )
@@ -2988,7 +2988,7 @@ r.expr(1).do(function(var_1) {
     it( 'Test backtrace for r.expr(1).do(function(v) { return r.object("a") })', async () => {
         try {
             r.nextVarId = 1
-            await r.expr( 1 ).do( function( v ) {
+            await r.expr( 1 ).do( function() {
                 return r.object( 'a' )
             } ).run()
             assert.fail( 'should throw' )
@@ -3266,7 +3266,7 @@ r.expr(1).do(function(var_1) {
     it( 'Test backtrace for r.do(1,function( b) { return r.point(1, 2).add("foo") })', async () => {
         try {
             r.nextVarId = 1
-            await r.do( 1, function( b ) {
+            await r.do( 1, function() {
                 return r.point( 1, 2 ).add( 'foo' )
             } ).run()
             assert.fail( 'should throw' )
@@ -3290,7 +3290,7 @@ r.expr(1).do(function(var_1) {
     it( 'Test backtrace for r.do(1,function( b) { return r.line(1, 2).add("foo") })', async () => {
         try {
             r.nextVarId = 1
-            await r.do( 1, function( b ) {
+            await r.do( 1, function() {
                 return r.line( 1, 2 ).add( 'foo' )
             } ).run()
             assert.fail( 'should throw' )
@@ -3314,7 +3314,7 @@ r.expr(1).do(function(var_1) {
     it( 'Test backtrace for r.do(1,function( b) { return r.circle(1, 2).add("foo") })', async () => {
         try {
             r.nextVarId = 1
-            await r.do( 1, function( b ) {
+            await r.do( 1, function() {
                 return r.circle( 1, 2 ).add( 'foo' )
             } ).run()
             assert.fail( 'should throw' )
@@ -3338,7 +3338,7 @@ r.expr(1).do(function(var_1) {
     it( 'Test backtrace for r.do(1,function( b) { return r.polygon(1, 2, 3).add("foo") })', async () => {
         try {
             r.nextVarId = 1
-            await r.do( 1, function( b ) {
+            await r.do( 1, function() {
                 return r.polygon( 1, 2, 3 ).add( 'foo' )
             } ).run()
             assert.fail( 'should throw' )
@@ -3362,7 +3362,7 @@ r.expr(1).do(function(var_1) {
     it( 'Test backtrace for r.do(1,function( b) { return r.polygon([0,0], [1,1], [2,3]).polygonSub(3).add("foo") })', async () => {
         try {
             r.nextVarId = 1
-            await r.do( 1, function( b ) {
+            await r.do( 1, function() {
                 return r.polygon( [ 0, 0 ], [ 1, 1 ], [ 2, 3 ] ).polygonSub( 3 ).add( 'foo' )
             } ).run()
             assert.fail( 'should throw' )
@@ -3386,7 +3386,7 @@ r.expr(1).do(function(var_1) {
     it( 'Test backtrace for r.do(1,function( b) { return r.polygon([0,0], [1,1], [2,3]).fill().polygonSub(3).add("foo") })', async () => {
         try {
             r.nextVarId = 1
-            await r.do( 1, function( b ) {
+            await r.do( 1, function() {
                 return r.polygon( [ 0, 0 ], [ 1, 1 ], [ 2, 3 ] ).fill().polygonSub( 3 ).add( 'foo' )
             } ).run()
             assert.fail( 'should throw' )
@@ -3410,7 +3410,7 @@ r.expr(1).do(function(var_1) {
     it( 'Test backtrace for r.do(1,function( b) { return r.polygon([0,0], [1,1], [2,3]).distance(r.expr("foo").polygonSub(3)).add("foo") })', async () => {
         try {
             r.nextVarId = 1
-            await r.do( 1, function( b ) {
+            await r.do( 1, function() {
                 return r.polygon( [ 0, 0 ], [ 1, 1 ], [ 2, 3 ] ).distance( r.expr( 'foo' ).polygonSub( 3 ) ).add( 'foo' )
             } ).run()
             assert.fail( 'should throw' )
@@ -3822,7 +3822,7 @@ r.map(r.expr([1, 2, 3]), [1, 2, 3], function(var_1, var_2) {
     it( 'Test backtrace for r.map([1,2,3], [1,2,3], function(var_1, var_2) { return var_1("bah").add(3) })', async () => {
         try {
             r.nextVarId = 1
-            await r.map( [ 1, 2, 3 ], [ 1, 2, 3 ], function( var_1, var_2 ) {
+            await r.map( [ 1, 2, 3 ], [ 1, 2, 3 ], function( var_1 ) {
                 return var_1( 'bah' ).add( 3 )
             } ).run() // eslint-disable-line camelcase
             assert.fail( 'should throw' )

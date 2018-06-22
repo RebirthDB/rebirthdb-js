@@ -70,7 +70,7 @@ describe( 'stream', () => {
         assert( stream )
         assert( stream instanceof Readable )
 
-        await new Promise( ( resolve, reject ) => {
+        await new Promise( resolve => {
             let count = 0
             stream.on( 'data', function() {
                 count++
@@ -88,7 +88,7 @@ describe( 'stream', () => {
         } )
         assert( stream )
         assert( stream instanceof Readable )
-        const promise = new Promise( ( resolve, reject ) => {
+        const promise = new Promise( resolve => {
             let count = 0
             stream.on( 'data', function() {
                 count++
@@ -113,7 +113,7 @@ describe( 'stream', () => {
         assert( stream )
         assert( stream instanceof Readable )
 
-        const promise = new Promise( ( resolve, reject ) => {
+        const promise = new Promise( resolve => {
             let count = 0
             stream.on( 'data', function() {
                 count++
@@ -165,7 +165,7 @@ describe( 'stream', () => {
             stream: true,
             maxBatchRows: 1
         } )
-        await new Promise( ( resolve, reject ) => {
+        await new Promise( resolve => {
             let count = 0
             stream.on( 'data', function() {
                 count++
@@ -197,7 +197,7 @@ describe( 'stream', () => {
                     reject( new Error( 'stream.read() should not return null when readable was emitted' ) )
                 }
                 let count = 1
-                stream.on( 'data', function( data ) {
+                stream.on( 'data', () => {
                     count++
                     if ( count === numDocs ) {
                         resolve()
@@ -254,7 +254,7 @@ describe( 'stream', () => {
         await new Promise( ( resolve, reject ) => {
             stream.once( 'readable', function() {
                 let count = 0
-                stream.on( 'data', function( data ) {
+                stream.on( 'data', () => {
                     count++
                     if ( count === 20 ) {
                         resolve()
@@ -319,7 +319,7 @@ describe( 'stream', () => {
                     reject( new Error( 'stream.read() should not return null when readable was emitted' ) )
                 }
                 let count = 1
-                stream.on( 'data', function( data ) {
+                stream.on( 'data', () => {
                     count++
                     if ( count === numDocs ) {
                         resolve()
@@ -342,7 +342,7 @@ describe( 'stream', () => {
                     reject( new Error( 'stream.read() should not return null when readable was emitted' ) )
                 }
                 let count = 1
-                stream.on( 'data', function( data ) {
+                stream.on( 'data', () => {
                     count++
                     if ( count === numDocs ) {
                         resolve()
@@ -378,7 +378,7 @@ describe( 'stream', () => {
                             done( new Error( 'All the data should have been streamed' ) )
                         }
                         return r1.db( dbName ).table( dumpTable ).delete()
-                    } ).then( ( _ ) => r1.getPool().drain() ).then( done ).error( done )
+                    } ).then( () => r1.getPool().drain() ).then( done ).error( done )
             } )
     } )
 
@@ -406,7 +406,7 @@ describe( 'stream', () => {
                         done( new Error( 'All the data should have been streamed' ) )
                     }
                     return r1.db( dbName ).table( dumpTable ).delete()
-                } ).then( ( _ ) => r1.getPool().drain() ).then( done ).error( done )
+                } ).then( () => r1.getPool().drain() ).then( done ).error( done )
             } )
     } )
 
@@ -434,7 +434,7 @@ describe( 'stream', () => {
                         done( new Error( 'All the data should have been streamed' ) )
                     }
                     return r1.db( dbName ).table( dumpTable ).delete()
-                } ).then( ( _ ) => r1.getPool().drain() ).then( done ).error( done )
+                } ).then( () => r1.getPool().drain() ).then( done ).error( done )
             } )
     } )
 
@@ -462,7 +462,7 @@ describe( 'stream', () => {
                         done( new Error( 'All the data should have been streamed' ) )
                     }
                     return r1.db( dbName ).table( dumpTable ).delete()
-                } ).then( ( _ ) => r1.getPool( 0 ).drain() ).then( done ).error( done )
+                } ).then( () => r1.getPool( 0 ).drain() ).then( done ).error( done )
             } )
     } )
 
@@ -502,7 +502,7 @@ describe( 'stream', () => {
                     foo: 3
                 } )
                 return r1.db( dbName ).table( dumpTable ).delete()
-            } ).then( ( _ ) => r1.getPool( 0 ).drain() ).then( done ).error( done )
+            } ).then( () => r1.getPool( 0 ).drain() ).then( done ).error( done )
         } )
     } )
 
@@ -551,7 +551,7 @@ describe( 'stream', () => {
                 } ).then( function( result ) {
                     assert( result, numDocs * 2 )
                     return r.db( dbName ).table( dumpTable ).delete()
-                } ).then( ( _ ) => r.getPool().drain() ).then( done ).error( done )
+                } ).then( () => r.getPool().drain() ).then( done ).error( done )
             } )
     } )
 
