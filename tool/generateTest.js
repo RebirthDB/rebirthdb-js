@@ -1,4 +1,3 @@
-var Promise = require( 'bluebird' );
 var config = require( __dirname + '/../test/config.js' );
 var r = require( __dirname + '/../lib' )( config );
 var util = require( __dirname + '/../test/util/common.js' );

@@ -23,6 +23,9 @@
     "driver",
     "nodejs"
   ],
+  "engines": {
+    "node": ">=6"
+  },
   "author": "Michel Tu <orphee@gmail.com> (http://justonepixel.com/)",
   "license": "MIT",
   "readmeFilename": "README.md",
@@ -30,7 +33,6 @@
     "url": "https://github.com/RebirthDB/rebirthdb-js/issues"
   },
   "dependencies": {
-    "bluebird": "^3.5.1",
     "luxon": "^1.2.1",
     "iterall": "^1.2.2"
   },

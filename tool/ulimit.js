@@ -9,9 +9,6 @@ var r = require( '../lib/' )( {
 } );
 
 
-var Promise = require( 'bluebird' );
-
-
 ( function() {
 
     var promises = [];

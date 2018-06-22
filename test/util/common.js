@@ -1,4 +1,3 @@
-const Promise = require('bluebird')
 const {it} = require('mocha')
 
 Promise.coroutine.addYieldHandler(function (yieldedValue) {
