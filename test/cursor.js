@@ -794,7 +794,7 @@ describe( 'cursor', () => {
         assert( connection )
 
         const feed = await r.db( dbName ).table( tableName ).changes().run( connection )
-        feed.eachAsync( function() {} ).error( function( err ) {
+        feed.eachAsync( function() {} ).catch( function( err ) {
             assert( err.message.match( /^The connection was closed before the query could be completed for/ ) )
         } )
         // Kill the TCP connection

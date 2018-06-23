@@ -330,7 +330,7 @@ describe( 'accessing-reql', function() {
             r.connect( {
                 port: port,
                 timeout: 1
-            } ).error( ( err ) => {
+            } ).catch( err => {
                 assert.equal( err.message, 'Failed to connect to localhost:' + port + ' in less than 1s.' )
             } )
         } )

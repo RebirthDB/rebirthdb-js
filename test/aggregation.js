@@ -48,7 +48,8 @@ describe( 'aggregation', () => {
     } )
 
     it( '`fold` should work -- with emit', async () => {
-        const result = await r.expr( [ 'foo', 'bar', 'buzz', 'hello', 'world' ] ).fold( 0, function( acc ) {
+        const result = await r.expr( [ 'foo', 'bar', 'buzz', 'hello', 'world' ] ).fold( 0, function( acc, element ) {
+            assert.ok( element );
             return acc.add( 1 )
         }, {
             emit: function( oldAcc, element, newAcc ) {
@@ -59,7 +60,8 @@ describe( 'aggregation', () => {
     } )
 
     it( '`fold` should work -- with emit and finalEmit', async () => {
-        const result = await r.expr( [ 'foo', 'bar', 'buzz', 'hello', 'world' ] ).fold( 0, function( acc ) {
+        const result = await r.expr( [ 'foo', 'bar', 'buzz', 'hello', 'world' ] ).fold( 0, function( acc, element ) {
+            assert.ok( element );
             return acc.add( 1 )
         }, {
             emit: function( oldAcc, element, newAcc ) {
@@ -133,23 +135,21 @@ describe( 'aggregation', () => {
 
     it( '`group` should work with r.row', async () => {
         const result = await r.expr( [ {
-                name: 'Michel',
-                grownUp: true
-            }, {
-                name: 'Laurent',
-                grownUp: true
-            },
-            {
-                name: 'Sophie',
-                grownUp: true
-            }, {
-                name: 'Luke',
-                grownUp: false
-            }, {
-                name: 'Mino',
-                grownUp: false
-            }
-        ] ).group( r.row( 'grownUp' ) ).run()
+            name: 'Michel',
+            grownUp: true
+        }, {
+            name: 'Laurent',
+            grownUp: true
+        }, {
+            name: 'Sophie',
+            grownUp: true
+        }, {
+            name: 'Luke',
+            grownUp: false
+        }, {
+            name: 'Mino',
+            grownUp: false
+        } ] ).group( r.row( 'grownUp' ) ).run()
         result.sort()
 
         assert.deepEqual( result, [ {

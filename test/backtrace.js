@@ -789,9 +789,10 @@ Frames:
 
 Error:
 Cannot perform get_field on a non-object non-sequence `1` in:
-r.expr([1, 2, 3]).eqJoin("id", r.db("5500af7b5c2c94b2672a5f0029512757").table("85bbcc72331aa82bfe0306204997613e"))
-             ^^^^
-  .add(1)
+r.expr([1, 2, 3]).eqJoin("id", r.db("96b88e3926a311a85526f79b10a9ab6e").table("e019c9e8b91c847c1707cbf367077765"))
+                         ^^^^                                                                                     
+    .add(1)
+
 */
     it( 'Test backtrace for r.expr([1,2,3]).eqJoin("id", r.db(dbName).table(tableName)).add(1)', async () => {
         try {
@@ -801,8 +802,8 @@ r.expr([1, 2, 3]).eqJoin("id", r.db("5500af7b5c2c94b2672a5f0029512757").table("8
         }
         catch ( e ) {
             assert( e.message === `Cannot perform get_field on a non-object non-sequence \`1\` in:
-r.expr([1, 2, 3]).eqJoin("id", r.db("${dbName}").table("${tableName}"))
-                         ^^^^
+r.expr([1, 2, 3]).eqJoin("id", r.db("${ dbName }").table("${ tableName }"))
+                         ^^^^                                                                                     
     .add(1)
 ` )
         }
@@ -910,7 +911,7 @@ Frames:
 Error:
 Cannot perform get_field on a non-object non-sequence `2` in:
 r.expr([1, 2, 3]).orderBy("foo").add(1)
-              ^^^^^
+                          ^^^^^        
 */
     it( 'Test backtrace for r.expr([1,2,3]).orderBy("foo").add(1)', async () => {
         try {
@@ -921,7 +922,7 @@ r.expr([1, 2, 3]).orderBy("foo").add(1)
         catch ( e ) {
             assert( e.message === `Cannot perform get_field on a non-object non-sequence \`2\` in:
 r.expr([1, 2, 3]).orderBy("foo").add(1)
-                          ^^^^^
+                          ^^^^^        
 ` )
         }
     } )
@@ -1159,12 +1160,13 @@ Frames:
 Error:
 Expected type SELECTION but found DATUM:
 [
-  1,
-  2,
-  3
+	1,
+	2,
+	3
 ] in:
 r.expr([1, 2, 3]).update(r.row("foo")).add("Hello")
-^^^^^^^^^^^^^^^^^
+^^^^^^^^^^^^^^^^^                                  
+
 */
     it( 'Test backtrace for r.expr([1,2,3]).update(r.row("foo")).add("Hello")', async () => {
         try {
@@ -1173,7 +1175,15 @@ r.expr([1, 2, 3]).update(r.row("foo")).add("Hello")
             assert.fail( 'should throw' )
         }
         catch ( e ) {
-            assert( e.message === 'Expected type SELECTION but found DATUM:\n[\n\t1,\n\t2,\n\t3\n] in:\nr.expr([1, 2, 3]).update(r.row("foo")).add("Hello")\n^^^^^^^^^^^^^^^^^                                  \n' )
+            assert( e.message === `Expected type SELECTION but found DATUM:
+[
+	1,
+	2,
+	3
+] in:
+r.expr([1, 2, 3]).update(r.row("foo")).add("Hello")
+^^^^^^^^^^^^^^^^^                                  
+` )
         }
     } )
 
@@ -2472,7 +2482,7 @@ Frames:
 Error:
 Expected type NUMBER but found STRING in:
 r.expr([1, 2]).map(r.row.add("eh"))
-           ^^^^^^^^^^^^^^^
+                   ^^^^^^^^^^^^^^^ 
 */
     it( 'Test backtrace for r.expr([1,2]).map(r.row.add("eh"))', async () => {
         try {
@@ -2481,7 +2491,10 @@ r.expr([1, 2]).map(r.row.add("eh"))
             assert.fail( 'should throw' )
         }
         catch ( e ) {
-            assert( e.message === 'Expected type NUMBER but found STRING in:\nr.expr([1, 2]).map(r.row.add("eh"))\n                   ^^^^^^^^^^^^^^^ \n' )
+            assert( e.message === `Expected type NUMBER but found STRING in:
+r.expr([1, 2]).map(r.row.add("eh"))
+                   ^^^^^^^^^^^^^^^ 
+` )
         }
     } )
 
@@ -2497,28 +2510,28 @@ Frames:
 Error:
 Table `test.foo` does not exist in:
 r.table("foo").add(1).add(1).add("hello-super-long-string").add("another-long-string")
-^^^^^^^^^^^^^^
-  .add("one-last-string").map(function(var_1) {
-    return r.expr([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]).map(function(var_2) {
-      return var_2("b").add("hello-super-long-string").add("another-long-string").add("one-last-string")
-        .add("hello-super-long-string").add("another-long-string").add("one-last-string")
-        .add("hello-super-long-string").add("another-long-string").add("one-last-string")
-        .add("hello-super-long-string").add("another-long-string").add("one-last-string")
-        .add("hello-super-long-string").add("another-long-string").add("one-last-string")
-        .mul(var_2("b")).merge({
-          firstName: "xxxxxx",
-          lastName: "yyyy",
-          email: "xxxxx@yyyy.com",
-          phone: "xxx-xxx-xxxx"
+^^^^^^^^^^^^^^                                                                        
+    .add("one-last-string").map(function() {
+        return r.expr([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]).map(function(var_1) {
+            return var_1("b").add("hello-super-long-string").add("another-long-string").add("one-last-string")
+                .add("hello-super-long-string").add("another-long-string").add("one-last-string")
+                .add("hello-super-long-string").add("another-long-string").add("one-last-string")
+                .add("hello-super-long-string").add("another-long-string").add("one-last-string")
+                .add("hello-super-long-string").add("another-long-string").add("one-last-string")
+                .mul(var_1("b")).merge({
+                    firstName: "xxxxxx",
+                    lastName: "yyyy",
+                    email: "xxxxx@yyyy.com",
+                    phone: "xxx-xxx-xxxx"
+                })
+        }).add(2).map(function(var_2) {
+            return var_2.add("hello-super-long-string").add("another-long-string").add("one-last-string")
+                .add("hello-super-long-string").add("another-long-string").add("one-last-string")
+                .add("hello-super-long-string").add("another-long-string").add("one-last-string")
+                .add("hello-super-long-string").add("another-long-string").add("one-last-string")
+                .add("hello-super-long-string").add("another-long-string").add("one-last-string")
         })
-    }).add(2).map(function(var_3) {
-      return var_3.add("hello-super-long-string").add("another-long-string").add("one-last-string")
-        .add("hello-super-long-string").add("another-long-string").add("one-last-string")
-        .add("hello-super-long-string").add("another-long-string").add("one-last-string")
-        .add("hello-super-long-string").add("another-long-string").add("one-last-string")
-        .add("hello-super-long-string").add("another-long-string").add("one-last-string")
     })
-  })
 */
     it( 'Test backtrace for r.table("foo").add(1).add(1).add("hello-super-long-string").add("another-long-string").add("one-last-string").map( function(doc) { return r.expr([1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16]).map(function(test) { return test("b").add("hello-super-long-string").add("another-long-string").add("one-last-string").add("hello-super-long-string").add("another-long-string").add("one-last-string").add("hello-super-long-string").add("another-long-string").add("one-last-string").add("hello-super-long-string").add("another-long-string").add("one-last-string").add("hello-super-long-string").add("another-long-string").add("one-last-string").mul(test("b")).merge({ firstName: "xxxxxx", lastName: "yyyy", email: "xxxxx@yyyy.com", phone: "xxx-xxx-xxxx" }); }).add(2).map(function(doc) { return doc.add("hello-super-long-string").add("another-long-string").add("one-last-string").add("hello-super-long-string").add("another-long-string").add("one-last-string").add("hello-super-long-string").add("another-long-string").add("one-last-string").add("hello-super-long-string").add("another-long-string").add("one-last-string").add("hello-super-long-string").add("another-long-string").add("one-last-string") }); })', async () => {
         try {
@@ -2540,22 +2553,22 @@ r.table("foo").add(1).add(1).add("hello-super-long-string").add("another-long-st
         catch ( e ) {
             assert( e.message === `Table \`test.foo\` does not exist in:
 r.table("foo").add(1).add(1).add("hello-super-long-string").add("another-long-string")
-^^^^^^^^^^^^^^
-    .add("one-last-string").map(function(var_1) {
-        return r.expr([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]).map(function(var_2) {
-            return var_2("b").add("hello-super-long-string").add("another-long-string").add("one-last-string")
+^^^^^^^^^^^^^^                                                                        
+    .add("one-last-string").map(function() {
+        return r.expr([1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16]).map(function(var_1) {
+            return var_1("b").add("hello-super-long-string").add("another-long-string").add("one-last-string")
                 .add("hello-super-long-string").add("another-long-string").add("one-last-string")
                 .add("hello-super-long-string").add("another-long-string").add("one-last-string")
                 .add("hello-super-long-string").add("another-long-string").add("one-last-string")
                 .add("hello-super-long-string").add("another-long-string").add("one-last-string")
-                .mul(var_2("b")).merge({
+                .mul(var_1("b")).merge({
                     firstName: "xxxxxx",
                     lastName: "yyyy",
                     email: "xxxxx@yyyy.com",
                     phone: "xxx-xxx-xxxx"
                 })
-        }).add(2).map(function(var_3) {
-            return var_3.add("hello-super-long-string").add("another-long-string").add("one-last-string")
+        }).add(2).map(function(var_2) {
+            return var_2.add("hello-super-long-string").add("another-long-string").add("one-last-string")
                 .add("hello-super-long-string").add("another-long-string").add("one-last-string")
                 .add("hello-super-long-string").add("another-long-string").add("one-last-string")
                 .add("hello-super-long-string").add("another-long-string").add("one-last-string")
@@ -2951,9 +2964,9 @@ Frames:
 
 Error:
 Expected type STRING but found NUMBER in:
-r.expr(1).do(function(var_1) {
-  return r.object(1, 2)
-          ^
+r.expr(1).do(function() {
+    return r.object(1, 2)
+                    ^    
 })
 */
     it( 'Test backtrace for r.expr(1).do(function(v) { return r.object(1, 2) })', async () => {
@@ -2965,7 +2978,12 @@ r.expr(1).do(function(var_1) {
             assert.fail( 'should throw' )
         }
         catch ( e ) {
-            assert( e.message === 'Expected type STRING but found NUMBER in:\nr.expr(1).do(function(var_1) {\n    return r.object(1, 2)\n                    ^    \n})\n' )
+            assert( e.message === `Expected type STRING but found NUMBER in:
+r.expr(1).do(function() {
+    return r.object(1, 2)
+                    ^    
+})
+` )
         }
     } )
 
@@ -2975,9 +2993,9 @@ Frames:
 
 Error:
 OBJECT expects an even number of arguments (but found 1) in:
-r.expr(1).do(function(var_1) {
-  return r.object("a")
-       ^^^^^^^^^^^^^
+r.expr(1).do(function() {
+    return r.object("a")
+           ^^^^^^^^^^^^^
 })
 */
     it( 'Test backtrace for r.expr(1).do(function(v) { return r.object("a") })', async () => {
@@ -2989,7 +3007,12 @@ r.expr(1).do(function(var_1) {
             assert.fail( 'should throw' )
         }
         catch ( e ) {
-            assert( e.message === 'OBJECT expects an even number of arguments (but found 1) in:\nr.expr(1).do(function(var_1) {\n    return r.object("a")\n           ^^^^^^^^^^^^^\n})\n' )
+            assert( e.message === `OBJECT expects an even number of arguments (but found 1) in:
+r.expr(1).do(function() {
+    return r.object("a")
+           ^^^^^^^^^^^^^
+})
+` )
         }
     } )
 
@@ -3253,9 +3276,9 @@ Frames:
 
 Error:
 Expected type NUMBER but found PTYPE<GEOMETRY> in:
-r.expr(1).do(function(var_1) {
-  return r.point(1, 2).add("foo")
-       ^^^^^^^^^^^^^^^^^^^^^^^^
+r.expr(1).do(function() {
+    return r.point(1, 2).add("foo")
+           ^^^^^^^^^^^^^^^^^^^^^^^^
 })
 */
     it( 'Test backtrace for r.do(1,function( b) { return r.point(1, 2).add("foo") })', async () => {
@@ -3267,7 +3290,12 @@ r.expr(1).do(function(var_1) {
             assert.fail( 'should throw' )
         }
         catch ( e ) {
-            assert( e.message === 'Expected type NUMBER but found PTYPE<GEOMETRY> in:\nr.expr(1).do(function(var_1) {\n    return r.point(1, 2).add("foo")\n           ^^^^^^^^^^^^^^^^^^^^^^^^\n})\n' )
+            assert( e.message === `Expected type NUMBER but found PTYPE<GEOMETRY> in:
+r.expr(1).do(function() {
+    return r.point(1, 2).add("foo")
+           ^^^^^^^^^^^^^^^^^^^^^^^^
+})
+` )
         }
     } )
 
@@ -3277,9 +3305,9 @@ Frames:
 
 Error:
 Expected type ARRAY but found NUMBER in:
-r.expr(1).do(function(var_1) {
-  return r.line(1, 2).add("foo")
-       ^^^^^^^^^^^^
+r.expr(1).do(function() {
+    return r.line(1, 2).add("foo")
+           ^^^^^^^^^^^^           
 })
 */
     it( 'Test backtrace for r.do(1,function( b) { return r.line(1, 2).add("foo") })', async () => {
@@ -3291,7 +3319,12 @@ r.expr(1).do(function(var_1) {
             assert.fail( 'should throw' )
         }
         catch ( e ) {
-            assert( e.message === 'Expected type ARRAY but found NUMBER in:\nr.expr(1).do(function(var_1) {\n    return r.line(1, 2).add("foo")\n           ^^^^^^^^^^^^           \n})\n' )
+            assert( e.message === `Expected type ARRAY but found NUMBER in:
+r.expr(1).do(function() {
+    return r.line(1, 2).add("foo")
+           ^^^^^^^^^^^^           
+})
+` )
         }
     } )
 
@@ -3301,9 +3334,9 @@ Frames:
 
 Error:
 Expected type ARRAY but found NUMBER in:
-r.expr(1).do(function(var_1) {
-  return r.circle(1, 2).add("foo")
-       ^^^^^^^^^^^^^^
+r.expr(1).do(function() {
+    return r.circle(1, 2).add("foo")
+           ^^^^^^^^^^^^^^           
 })
 */
     it( 'Test backtrace for r.do(1,function( b) { return r.circle(1, 2).add("foo") })', async () => {
@@ -3315,7 +3348,12 @@ r.expr(1).do(function(var_1) {
             assert.fail( 'should throw' )
         }
         catch ( e ) {
-            assert( e.message === 'Expected type ARRAY but found NUMBER in:\nr.expr(1).do(function(var_1) {\n    return r.circle(1, 2).add("foo")\n           ^^^^^^^^^^^^^^           \n})\n' )
+            assert( e.message === `Expected type ARRAY but found NUMBER in:
+r.expr(1).do(function() {
+    return r.circle(1, 2).add("foo")
+           ^^^^^^^^^^^^^^           
+})
+` )
         }
     } )
 
@@ -3325,9 +3363,9 @@ Frames:
 
 Error:
 Expected type ARRAY but found NUMBER in:
-r.expr(1).do(function(var_1) {
-  return r.polygon(1, 2, 3).add("foo")
-       ^^^^^^^^^^^^^^^^^^
+r.expr(1).do(function() {
+    return r.polygon(1, 2, 3).add("foo")
+           ^^^^^^^^^^^^^^^^^^           
 })
 */
     it( 'Test backtrace for r.do(1,function( b) { return r.polygon(1, 2, 3).add("foo") })', async () => {
@@ -3339,7 +3377,12 @@ r.expr(1).do(function(var_1) {
             assert.fail( 'should throw' )
         }
         catch ( e ) {
-            assert( e.message === 'Expected type ARRAY but found NUMBER in:\nr.expr(1).do(function(var_1) {\n    return r.polygon(1, 2, 3).add("foo")\n           ^^^^^^^^^^^^^^^^^^           \n})\n' )
+            assert( e.message === `Expected type ARRAY but found NUMBER in:
+r.expr(1).do(function() {
+    return r.polygon(1, 2, 3).add("foo")
+           ^^^^^^^^^^^^^^^^^^           
+})
+` )
         }
     } )
 
@@ -3349,9 +3392,9 @@ Frames:
 
 Error:
 Not a GEOMETRY pseudotype: `3` in:
-r.expr(1).do(function(var_1) {
-  return r.polygon([0, 0], [1, 1], [2, 3]).polygonSub(3).add("foo")
-                            ^
+r.expr(1).do(function() {
+    return r.polygon([0, 0], [1, 1], [2, 3]).polygonSub(3).add("foo")
+                                                        ^            
 })
 */
     it( 'Test backtrace for r.do(1,function( b) { return r.polygon([0,0], [1,1], [2,3]).polygonSub(3).add("foo") })', async () => {
@@ -3363,7 +3406,12 @@ r.expr(1).do(function(var_1) {
             assert.fail( 'should throw' )
         }
         catch ( e ) {
-            assert( e.message === 'Not a GEOMETRY pseudotype: `3` in:\nr.expr(1).do(function(var_1) {\n    return r.polygon([0, 0], [1, 1], [2, 3]).polygonSub(3).add("foo")\n                                                        ^            \n})\n' )
+            assert( e.message === `Not a GEOMETRY pseudotype: \`3\` in:
+r.expr(1).do(function() {
+    return r.polygon([0, 0], [1, 1], [2, 3]).polygonSub(3).add("foo")
+                                                        ^            
+})
+` )
         }
     } )
 
@@ -3373,9 +3421,9 @@ Frames:
 
 Error:
 Expected geometry of type `LineString` but found `Polygon` in:
-r.expr(1).do(function(var_1) {
-  return r.polygon([0, 0], [1, 1], [2, 3]).fill().polygonSub(3).add("foo")
-       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+r.expr(1).do(function() {
+    return r.polygon([0, 0], [1, 1], [2, 3]).fill().polygonSub(3).add("foo")
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^                         
 })
 */
     it( 'Test backtrace for r.do(1,function( b) { return r.polygon([0,0], [1,1], [2,3]).fill().polygonSub(3).add("foo") })', async () => {
@@ -3387,7 +3435,12 @@ r.expr(1).do(function(var_1) {
             assert.fail( 'should throw' )
         }
         catch ( e ) {
-            assert( e.message === 'Expected geometry of type `LineString` but found `Polygon` in:\nr.expr(1).do(function(var_1) {\n    return r.polygon([0, 0], [1, 1], [2, 3]).fill().polygonSub(3).add("foo")\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^                         \n})\n' )
+            assert( e.message === `Expected geometry of type \`LineString\` but found \`Polygon\` in:
+r.expr(1).do(function() {
+    return r.polygon([0, 0], [1, 1], [2, 3]).fill().polygonSub(3).add("foo")
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^                         
+})
+` )
         }
     } )
 
@@ -3397,9 +3450,9 @@ Frames:
 
 Error:
 Not a GEOMETRY pseudotype: `"foo"` in:
-r.expr(1).do(function(var_1) {
-  return r.polygon([0, 0], [1, 1], [2, 3]).distance(r.expr("foo").polygonSub(3)).add("foo")
-                            ^^^^^^^^^^^^^
+r.expr(1).do(function() {
+    return r.polygon([0, 0], [1, 1], [2, 3]).distance(r.expr("foo").polygonSub(3)).add("foo")
+                                                      ^^^^^^^^^^^^^                          
 })
 */
     it( 'Test backtrace for r.do(1,function( b) { return r.polygon([0,0], [1,1], [2,3]).distance(r.expr("foo").polygonSub(3)).add("foo") })', async () => {
@@ -3411,7 +3464,12 @@ r.expr(1).do(function(var_1) {
             assert.fail( 'should throw' )
         }
         catch ( e ) {
-            assert( e.message === 'Not a GEOMETRY pseudotype: `"foo"` in:\nr.expr(1).do(function(var_1) {\n    return r.polygon([0, 0], [1, 1], [2, 3]).distance(r.expr("foo").polygonSub(3)).add("foo")\n                                                      ^^^^^^^^^^^^^                          \n})\n' )
+            assert( e.message === `Not a GEOMETRY pseudotype: \`"foo"\` in:
+r.expr(1).do(function() {
+    return r.polygon([0, 0], [1, 1], [2, 3]).distance(r.expr("foo").polygonSub(3)).add("foo")
+                                                      ^^^^^^^^^^^^^                          
+})
+` )
         }
     } )
 
@@ -3823,6 +3881,9 @@ r.map(r.expr([1, 2, 3]), [1, 2, 3], function(var_1, var_2) {
             assert.fail( 'should throw' )
         }
         catch ( e ) {
+            console.log( '```' );
+            console.log( e.message );
+            console.log( '```' );
             assert( e.message === 'Cannot perform bracket on a non-object non-sequence `1` in:\nr.map(r.expr([1, 2, 3]), [1, 2, 3], function(var_1, var_2) {\n    return var_1("bah").add(3)\n           ^^^^^              \n})\n' )
         }
     } )

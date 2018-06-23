@@ -28,8 +28,8 @@ describe( 'control structures', () => {
     } )
 
     it( '`r.do` should work', async () => {
-        let result = await r.do( 1, 2, function( a ) {
-            return a
+        let result = await r.do( 1, 2, function( a, unused ) {
+            return a || unused
         } ).run()
         assert.equal( result, 1 )
 
@@ -345,6 +345,6 @@ describe( 'control structures', () => {
 
     it( '`r.uuid("foo")` should work', async () => {
         const result = await r.uuid( 'rebirthdb-js' ).run()
-        assert.equal( result, '291a8039-bc4b-5472-9b2a-f133254e3283' )
+        assert.equal( result, 'd7257f57-d0bd-59db-b918-ad94c2070d05' )
     } )
 } )
