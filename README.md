@@ -1,8 +1,8 @@
 rethinkdbdash
 -------------
 
-[![Build Status](https://travis-ci.org/RebirthDB/rebirthdb-js.svg?branch=master)](https://travis-ci.org/RebirthDB/rebirthdb-js)
-[![Coverage Status](https://coveralls.io/repos/github/RebirthDB/rebirthdb-js/badge.svg?branch=master)](https://coveralls.io/github/RebirthDB/rebirthdb-js?branch=master)
+[![Build Status](https://travis-ci.org/RethinkDB/rethinkdb-js.svg?branch=master)](https://travis-ci.org/RethinkDB/rethinkdb-js)
+[![Coverage Status](https://coveralls.io/repos/github/RethinkDB/rethinkdb-js/badge.svg?branch=master)](https://coveralls.io/github/RethinkDB/rethinkdb-js?branch=master)
 
 A Node.js driver for RethinkDB with more advanced features.
 
